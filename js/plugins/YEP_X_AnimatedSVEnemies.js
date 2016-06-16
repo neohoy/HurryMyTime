@@ -11,6 +11,12 @@ Yanfly.SVE = Yanfly.SVE || {};
 
 //=============================================================================
  /*:
+ * @noteParam Sideview Battler
+ * @noteRequire 1
+ * @noteDir img/sv_actors/
+ * @noteType file
+ * @noteData enemies
+ *
  * @plugindesc v1.05 (Requires YEP_BattleEngineCore.js) This plugin lets
  * you use Animated Sideview Actors for enemies!
  * @author Yanfly Engine Plugins
@@ -600,7 +606,7 @@ Yanfly.SVE = Yanfly.SVE || {};
  *   This sets the sprite's weapon image to x, motion to y, and attack
  *   animation to z. An example of how this notetag would be used would be
  *   as such:
- *   
+ *
  *      <Sideview Weapon: 2, swing, 6>
  *
  *   This will give the battler a sword with the swing motion and playing
@@ -1331,7 +1337,7 @@ Sprite_Enemy.prototype.createShadowSprite = function() {
       this._shadowSprite.bitmap = ImageManager.loadSystemSmooth('Shadow2');
     } else {
       this._shadowSprite.bitmap = ImageManager.loadSystem('Shadow2');
-    }    
+    }
     this._shadowSprite.anchor.x = 0.5;
     this._shadowSprite.anchor.y = 0.5;
     this._shadowSprite.y = -2;
@@ -1422,7 +1428,7 @@ Sprite_Enemy.prototype.updateBreathing = function() {
 
 if (Imported.YEP_X_ActSeqPack2) {
 
-Yanfly.SVE.Sprite_Battler_getFloatHeight = 
+Yanfly.SVE.Sprite_Battler_getFloatHeight =
     Sprite_Battler.prototype.getFloatHeight;
 Sprite_Battler.prototype.getFloatHeight = function() {
     var value = Yanfly.SVE.Sprite_Battler_getFloatHeight.call(this);
