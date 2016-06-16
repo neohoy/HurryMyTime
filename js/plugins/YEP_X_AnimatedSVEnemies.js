@@ -11,7 +11,7 @@ Yanfly.SVE = Yanfly.SVE || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.05 (Requires YEP_BattleEngineCore.js) This plugin lets
+ * @plugindesc v1.09 (Requires YEP_BattleEngineCore.js) This plugin lets
  * you use Animated Sideview Actors for enemies!
  * @author Yanfly Engine Plugins
  *
@@ -52,6 +52,11 @@ Yanfly.SVE = Yanfly.SVE || {};
  * @desc The default frame speed used in between motions.
  * Default: 12
  * @default 12
+ *
+ * @param Show State Overlay
+ * @desc Show state overlays on sideview enemies?
+ * NO - false     YES - true
+ * @default true
  *
  * @param ---Shadows---
  * @default
@@ -568,6 +573,13 @@ Yanfly.SVE = Yanfly.SVE || {};
  *   the faster the sideview battler animates. The higher it is, the slower the
  *   battler animates.
  *
+ *   --- State Overlays ---
+ *
+ *   <Sideview Show State Overlay>
+ *   <Sideview Hide State Overlay>
+ *   This will either show or hide the state overlay for the sideview enemy and
+ *   ignore the default setting within the plugin parameters.
+ *
  *   --- Motions ---
  *
  *   <Sideview Attack Motion: swing>
@@ -600,7 +612,7 @@ Yanfly.SVE = Yanfly.SVE || {};
  *   This sets the sprite's weapon image to x, motion to y, and attack
  *   animation to z. An example of how this notetag would be used would be
  *   as such:
- *
+ *   
  *      <Sideview Weapon: 2, swing, 6>
  *
  *   This will give the battler a sword with the swing motion and playing
@@ -701,6 +713,23 @@ Yanfly.SVE = Yanfly.SVE || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.09:
+ * - Added a fix for state icons appearing behind battlers for the users who
+ * aren't using the Action Sequence Packs.
+ *
+ * Version 1.08:
+ * - State Icon and State Overlays will now synch together for floating and
+ * jumping battlers.
+ *
+ * Version 1.07:
+ * - Updated for RPG Maker MV version 1.1.0.
+ *
+ * Version 1.06a:
+ * - Fixed a bug that prevented animated sideview enemies from not mirroring.
+ * - Added <Sideview Show State Overlay> and <Sideview Hide State Overlay>
+ * notetags to make certain enemies show/hide state overlays.
+ * - Fixed a bug that was caused by motion notetags not retrieved properly.
+ *
  * Version 1.05:
  * - Made adjustments to the <Sprite Height: x> notetag to also affect the
  * location of the state icons and effects.
@@ -744,6 +773,7 @@ Yanfly.Param.SVEHeight = String(Yanfly.Parameters['Sprite Height']);
 Yanfly.Param.SVEHeight = Yanfly.Param.SVEHeight.toLowerCase();
 Yanfly.Param.SVECollapse = eval(String(Yanfly.Parameters['Collapse']));
 Yanfly.Param.SVEFrameSpeed = Number(Yanfly.Parameters['Frame Speed']);
+Yanfly.Param.SVEOverlay = eval(String(Yanfly.Parameters['Show State Overlay']));
 
 Yanfly.Param.SVEBreathing = Number(Yanfly.Parameters['Enable Breathing']);
 Yanfly.Param.SVEBreathSpeed = Number(Yanfly.Parameters['Breathing Speed']);
@@ -789,10 +819,13 @@ for (Yanfly.i = 1; Yanfly.i < 31; ++Yanfly.i) {
 
 Yanfly.SVE.DataManager_isDatabaseLoaded = DataManager.isDatabaseLoaded;
 DataManager.isDatabaseLoaded = function() {
-    if (!Yanfly.SVE.DataManager_isDatabaseLoaded.call(this)) return false;
-		DataManager.processSVENotetags1($dataEnemies);
-    DataManager.processSVENotetags2($dataStates);
-		return true;
+  if (!Yanfly.SVE.DataManager_isDatabaseLoaded.call(this)) return false;
+  if (!Yanfly._loaded_YEP_X_AnimatedSVEnemies) {
+  	this.processSVENotetags1($dataEnemies);
+    this.processSVENotetags2($dataStates);
+    Yanfly._loaded_YEP_X_AnimatedSVEnemies = true;
+  }
+	return true;
 };
 
 DataManager.processSVENotetags1 = function(group) {
@@ -833,6 +866,7 @@ DataManager.processSVENotetags1 = function(group) {
     obj.sideviewFloatSpeed = Yanfly.Param.SVEFloatSpeed;
     obj.sideviewFloatRate = Yanfly.Param.SVEFloatRate;
     obj.sideviewFloatHeight = Yanfly.Param.SVEFloatHeight;
+    obj.sideviewStateOverlay = Yanfly.Param.SVEOverlay;
 
 		for (var i = 0; i < notedata.length; i++) {
 			var line = notedata[i];
@@ -851,7 +885,7 @@ DataManager.processSVENotetags1 = function(group) {
 			} else if (line.match(/<(?:SIDEVIEW IDLE MOTION):[ ](.*)>/i)) {
 				obj.sideviewIdleMotion.push(String(RegExp.$1).toLowerCase());
 			} else if (line.match(/<(?:SIDEVIEW DAMAGE MOTION):[ ](.*)>/i)) {
-				obj.sideviewDmgMotion.push(String(RegExp.$1).toLowerCase());
+				obj.sideviewDmgMotion = String(RegExp.$1).toLowerCase();
 			} else if (line.match(/<(?:SIDEVIEW EVADE MOTION):[ ](.*)>/i)) {
 				obj.sideviewEvadeMotion = String(RegExp.$1).toLowerCase();
 			} else if (line.match(/<(?:SIDEVIEW ESCAPE MOTION):[ ](.*)>/i)) {
@@ -909,6 +943,10 @@ DataManager.processSVENotetags1 = function(group) {
         obj.sideviewFloatRate = rate;
       } else if (line.match(/<(?:FLOATING HEIGHT):[ ](\d+)>/i)) {
         obj.sideviewFloatHeight = parseInt(RegExp.$1);
+      } else if (line.match(/<SIDEVIEW SHOW STATE OVERLAY>/i)) {
+        obj.sideviewStateOverlay = true;
+      } else if (line.match(/<SIDEVIEW HIDE STATE OVERLAY>/i)) {
+        obj.sideviewStateOverlay = false;
       }
 		}
     // Breathing
@@ -986,22 +1024,22 @@ Yanfly.SVE.Game_Battler_spriteWidth = Game_Battler.prototype.spriteWidth;
 Game_Battler.prototype.spriteWidth = function() {
     if (this.isSideviewDimensions('width')) {
       var value = this.sideviewWidth();
-      value *= Math.abs(this.spriteScaleX());
     } else {
       var value = Yanfly.SVE.Game_Battler_spriteWidth.call(this);
     }
-    return value;
+    value *= Math.abs(this.spriteScaleX());
+    return Math.floor(value);
 };
 
 Yanfly.SVE.Game_Battler_spriteHeight = Game_Battler.prototype.spriteHeight;
 Game_Battler.prototype.spriteHeight = function() {
     if (this.isSideviewDimensions('height')) {
       var value = this.sideviewHeight();
-      value *= Math.abs(this.spriteScaleY());
     } else {
       var value = Yanfly.SVE.Game_Battler_spriteHeight.call(this);
     }
-    return value;
+    value *= Math.abs(this.spriteScaleY());
+    return Math.floor(value);
 };
 
 Game_Battler.prototype.isSideviewDimensions = function(value) {
@@ -1331,7 +1369,7 @@ Sprite_Enemy.prototype.createShadowSprite = function() {
       this._shadowSprite.bitmap = ImageManager.loadSystemSmooth('Shadow2');
     } else {
       this._shadowSprite.bitmap = ImageManager.loadSystem('Shadow2');
-    }
+    }    
     this._shadowSprite.anchor.x = 0.5;
     this._shadowSprite.anchor.y = 0.5;
     this._shadowSprite.y = -2;
@@ -1373,6 +1411,7 @@ Sprite_Enemy.prototype.update = function() {
     Yanfly.SVE.Sprite_Enemy_update.call(this);
     if (this._svBattlerEnabled) this.updateMotion();
     this.updateBreathing();
+    if (!Imported.YEP_X_ActSeqPack2) this.updateStateIconHeight();
 };
 
 Yanfly.SVE.Sprite_Enemy_updateStateSprite =
@@ -1387,18 +1426,20 @@ Sprite_Enemy.prototype.updateStateSprite = function() {
 };
 
 Sprite_Enemy.prototype.updateSVStateSprite = function() {
+    return;
     var height = this._enemy.spriteHeight() * -1;
     height -= Sprite_StateIcon._iconHeight;
     this._stateIconSprite.y = height;
-    this._stateSprite.y = 0;
+    this._stateSprite.y = (this._enemy.spriteHeight() - 64) * -1;
+    this._stateSprite.visible = this._enemy.enemy().sideviewStateOverlay;
 };
 
 Sprite_Enemy.prototype.updateFloatingStateSprite = function() {
     if (this._enemy && this._enemy.isFloating()) {
       var heightRate = this.addFloatingHeight();
       var height = this._enemy.spriteHeight();
-      this._stateIconSprite.y += heightRate * height;
-      this._stateSprite.y += heightRate * height;
+      this._stateIconSprite.y += Math.ceil(heightRate * height);
+      this._stateSprite.y += Math.ceil(heightRate * height);
     };
 };
 
@@ -1416,13 +1457,15 @@ Sprite_Enemy.prototype.updateBreathing = function() {
       var scaleX = 0;
       var scaleY = 0;
     }
+    var mirror = this.scale.x > 0 ? 1 : -1;
     this.scale.x = this._enemy.spriteScaleX() + scaleX;
+    this.scale.x = Math.abs(this.scale.x) * mirror;
     this.scale.y = this._enemy.spriteScaleY() + scaleY;
 };
 
 if (Imported.YEP_X_ActSeqPack2) {
 
-Yanfly.SVE.Sprite_Battler_getFloatHeight =
+Yanfly.SVE.Sprite_Battler_getFloatHeight = 
     Sprite_Battler.prototype.getFloatHeight;
 Sprite_Battler.prototype.getFloatHeight = function() {
     var value = Yanfly.SVE.Sprite_Battler_getFloatHeight.call(this);
@@ -1443,7 +1486,15 @@ Sprite_Battler.prototype.addFloatingHeight = function() {
     return value;
 };
 
-}; // Imported.YEP_X_ActSeqPack2
+} else { // If YEP_X_ActSeqPack2 is NOT installed
+
+Sprite_Enemy.prototype.updateStateIconHeight = function() {
+  var height = this._battler.spriteHeight() * -1;
+  height -= Sprite_StateIcon._iconHeight;
+  if (this._stateIconSprite) this._stateIconSprite.y = height;
+};
+
+} // Imported.YEP_X_ActSeqPack2
 
 Yanfly.SVE.Sprite_Enemy_updateBitmap = Sprite_Enemy.prototype.updateBitmap;
 Sprite_Enemy.prototype.updateBitmap = function() {
@@ -1585,6 +1636,8 @@ Sprite_Enemy.prototype.refreshMotion = function() {
     if (!this._svBattlerEnabled) return;
     var enemy = this._enemy;
     if (!enemy) return;
+    var motionGuard = Sprite_Actor.MOTIONS['guard'];
+    if (this._motion === motionGuard && !BattleManager.isInputting()) return;
     var stateMotion = enemy.stateMotionIndex();
     if (enemy.isInputting() || enemy.isActing()) {
         this.startMotion('walk');

@@ -11,7 +11,7 @@ Yanfly.Skill = Yanfly.Skill || {};
 
 //=============================================================================
 /*:
- * @plugindesc v1.06a Skills are now given more functions and the ability
+ * @plugindesc v1.09 Skills are now given more functions and the ability
  * to require different types of costs.
  * @author Yanfly Engine Plugins
  *
@@ -318,9 +318,24 @@ Yanfly.Skill = Yanfly.Skill || {};
  *   code that appears in between the tags. However, using any form of comments
  *   in this tag will block out code that follows.
  *
+ *   Those using the <Pre-Damage Eval> and <Post-Damage Eval> are able to make
+ *   use of the damage to be dealt and the damage that has been dealt through
+ *   the 'value' variable. The <Pre-Damage Eval> notetag is capable of altering
+ *   the 'value' variable and return it to have damage affected by its code.
+ *
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.09:
+ * - The <Pre-Damage Eval> notetag now has the ability alter damage dealt. The
+ * 'value' variable refers to and returns the damage affected by the action.
+ *
+ * Version 1.08:
+ * - Updated for RPG Maker MV version 1.1.0.
+ *
+ * Version 1.07:
+ * - Fixed a bug that prevented immortal actors at 0 HP from using skills.
  *
  * Version 1.06a:
  * - Added <Hide in Battle> and <Hide in Field> notetags.
@@ -381,7 +396,8 @@ Yanfly.Icon.Hp = Number(Yanfly.Parameters['HP Icon']);
 
 Yanfly.Skill.DataManager_isDatabaseLoaded = DataManager.isDatabaseLoaded;
 DataManager.isDatabaseLoaded = function() {
-    if (!Yanfly.Skill.DataManager_isDatabaseLoaded.call(this)) return false;
+  if (!Yanfly.Skill.DataManager_isDatabaseLoaded.call(this)) return false;
+  if (!Yanfly._loaded_YEP_SkillCore) {
     this.processSkillNotetags($dataSkills);
     this.processObjectNotetags($dataSkills);
     this.processObjectNotetags($dataItems);
@@ -390,7 +406,9 @@ DataManager.isDatabaseLoaded = function() {
     this.processGSCNotetags2($dataWeapons);
     this.processGSCNotetags2($dataArmors);
     this.processGSCNotetags2($dataStates);
-    return true;
+    Yanfly._loaded_YEP_SkillCore = true;
+  }
+  return true;
 };
 
 DataManager.processSkillNotetags = function(group) {
@@ -727,7 +745,9 @@ Game_BattlerBase.prototype.canPaySkillCost = function(skill) {
 };
 
 Game_BattlerBase.prototype.canPaySkillHpCost = function(skill) {
-    return this._hp > this.skillHpCost(skill);
+    var cost = this.skillHpCost(skill);
+    if (cost <= 0) return true;
+    return this._hp > cost;
 };
 
 Yanfly.Skill.Game_BattlerBase_paySkillCost =
@@ -985,7 +1005,7 @@ Game_Action.prototype.applyAfterEval = function(target) {
 Yanfly.Skill.Game_Action_executeDamage = Game_Action.prototype.executeDamage;
 Game_Action.prototype.executeDamage = function(target, value) {
     this.applyPreDamageEffect(target, value);
-    this.applyPreDamageEval(target, value);
+    value = this.applyPreDamageEval(target, value);
     Yanfly.Skill.Game_Action_executeDamage.call(this, target, value);
     this.applyPostDamageEffect(target, value);
     this.applyPostDamageEval(target, value);
@@ -1003,6 +1023,7 @@ Game_Action.prototype.applyPreDamageEval = function(target, value) {
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
     eval(item.customPreDamageEval);
+    return value;
 };
 
 Game_Action.prototype.applyPostDamageEffect = function(target, value) {
@@ -1057,7 +1078,7 @@ Window_Base.prototype.drawActorTp = function(actor, x, y, width) {
 };
 
 //=============================================================================
-// Window_SkillList
+// Window_SkillType
 //=============================================================================
 
 Window_SkillType.prototype.itemTextAlign = function() {
