@@ -11,12 +11,6 @@ Yanfly.SVE = Yanfly.SVE || {};
 
 //=============================================================================
  /*:
- * @noteParam Sideview Battler
- * @noteRequire 1
- * @noteDir img/sv_actors/
- * @noteType file
- * @noteData enemies
- *
  * @plugindesc v1.05 (Requires YEP_BattleEngineCore.js) This plugin lets
  * you use Animated Sideview Actors for enemies!
  * @author Yanfly Engine Plugins
