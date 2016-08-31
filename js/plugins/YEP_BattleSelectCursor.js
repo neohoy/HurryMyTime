@@ -11,7 +11,7 @@ Yanfly.BattleCursor = Yanfly.BattleCursor || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.01a Adds a cursor to battle when selecting allies and/or
+ * @plugindesc v1.03 Adds a cursor to battle when selecting allies and/or
  * enemies for targeting.
  * @author Yanfly Engine Plugins
  *
@@ -108,6 +108,13 @@ Yanfly.BattleCursor = Yanfly.BattleCursor || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.03:
+ * - Updated plugin to keep the battle select cursor on top of animated enemies
+ * from the YEP_X_AnimatedSVEnemies plugin.
+ *
+ * Version 1.02:
+ * - Optimized plugin to use less resources.
  *
  * Version 1.01a:
  * - Fixed a bug that caused the game to crash if an actor leaves mid-battle.
@@ -269,6 +276,18 @@ Sprite_Battler.prototype.setBattler = function(battler) {
     }
 };
 
+Yanfly.BattleCursor.Sprite_Battler_updateMain =
+  Sprite_Battler.prototype.updateMain;
+Sprite_Battler.prototype.updateMain = function() {
+  Yanfly.BattleCursor.Sprite_Battler_updateMain.call(this);
+  if (this._battleSelectCursorSprite) this.updateBattleCursorPriority();
+};
+
+Sprite_Battler.prototype.updateBattleCursorPriority = function() {
+  this.removeChild(this._battleSelectCursorSprite);
+  this.addChild(this._battleSelectCursorSprite);
+};
+
 //=============================================================================
 // Sprite_Actor
 //=============================================================================
@@ -306,6 +325,7 @@ Sprite_BattleSelectCursor.prototype.initialize = function() {
     Sprite_Base.prototype.initialize.call(this);
     this._index = 0;
     this._frameUpdateCount = 10;
+    this.opacity = 0;
 };
 
 Sprite_BattleSelectCursor.prototype.setBattler = function(battler) {
@@ -409,6 +429,10 @@ Sprite_BattleSelectCursor.prototype.updateFrame = function() {
     var ph = this.bitmap.height / this._frameRows;
     var sx = this._index % this._frameCols * pw;
     var sy = Math.floor(this._index / this._frameCols) * ph;
+    if (!this._initialLoad) {
+      this.opacity = 255;
+      this._initialLoad = true;
+    }
     this.setFrame(sx, sy, pw, ph);
   } else {
     this.setFrame(0, 0, 0, 0);

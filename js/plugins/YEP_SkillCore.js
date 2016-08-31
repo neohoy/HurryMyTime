@@ -11,7 +11,7 @@ Yanfly.Skill = Yanfly.Skill || {};
 
 //=============================================================================
 /*:
- * @plugindesc v1.09 Skills are now given more functions and the ability
+ * @plugindesc v1.10b Skills are now given more functions and the ability
  * to require different types of costs.
  * @author Yanfly Engine Plugins
  *
@@ -158,7 +158,8 @@ Yanfly.Skill = Yanfly.Skill || {};
  *   <Hide if Learned Skill: x to y>
  *   Will hide and disable this skill if skill x has been learned. If multiple
  *   skills are listed, the skill will be hidden and disabled if any one of the
- *   listed skills have been learned.
+ *   listed skills have been learned. This will ONLY apply to skills that have
+ *   been learned and not skills added through traits.
  *
  * ============================================================================
  * Gauge Swapping
@@ -326,6 +327,12 @@ Yanfly.Skill = Yanfly.Skill || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.10b:
+ * - Fixed a visual bug when using text code font changing for custom skill
+ * cost display.
+ * - <Hide if Learned Skill: x> documentation updated.
+ * - Compatibility update for future plugins.
  *
  * Version 1.09:
  * - The <Pre-Damage Eval> notetag now has the ability alter damage dealt. The
@@ -961,6 +968,17 @@ Game_Enemy.prototype.gaugeIcon3 = function() {
     return this.enemy().gaugeIcon3;
 };
 
+if (!Game_Enemy.prototype.skills) {
+    Game_Enemy.prototype.skills = function() {
+      var skills = []
+      for (var i = 0; i < this.enemy().actions.length; ++i) {
+        var skill = $dataSkills[this.enemy().actions[i].skillId];
+        if (skill) skills.push(skill);
+      }
+      return skills;
+    }
+};
+
 //=============================================================================
 // Game_Action
 //=============================================================================
@@ -1174,6 +1192,7 @@ Window_SkillList.prototype.drawCustomDisplayCost = function(skill, wx, wy, dw) {
     this.runDisplayEvalCost(skill);
     if (skill.customCostText === '') return dw;
     var width = this.textWidthEx(skill.customCostText);
+    this.resetFontSettings();
     this.drawTextEx(skill.customCostText, wx - width + dw, wy);
     var returnWidth = dw - width - Yanfly.Param.SCCCostPadding;
     this.resetFontSettings();

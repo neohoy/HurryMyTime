@@ -11,7 +11,7 @@ Yanfly.BSW = Yanfly.BSW || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.04 A simple battle status window that shows the
+ * @plugindesc v1.05 A simple battle status window that shows the
  * faces of your party members in horizontal format.
  * @author Yanfly Engine Plugins
  *
@@ -106,6 +106,9 @@ Yanfly.BSW = Yanfly.BSW || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.05:
+ * - Optimized face drawing effect to work more efficiently.
  *
  * Version 1.04:
  * - Added 'Allow Turn Skip' plugin parameter to let you decide if you can let
@@ -409,12 +412,12 @@ Window_BattleStatus.prototype.drawAllItems = function() {
 };
 
 Window_BattleStatus.prototype.drawAllFaces = function() {
-    this._faceContents.bitmap.clear();
     for (var i = 0; i < $gameParty.battleMembers().length; ++i) {
       var member = $gameParty.battleMembers()[i];
       var bitmap = ImageManager.loadFace(member.faceName());
       if (bitmap.width <= 0) return setTimeout(this.drawAllFaces.bind(this), 5);
     }
+    this._faceContents.bitmap.clear();
     for (var i = 0; i < this.maxItems(); ++i) {
       this.drawStatusFace(i);
     }

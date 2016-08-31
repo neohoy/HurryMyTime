@@ -384,6 +384,32 @@ Yanfly.Save = Yanfly.Save || {};
  */
 //=============================================================================
 
+if (!Utils.RPGMAKER_VERSION) {
+  var errortext = '\nYou do not have RPG Maker MV version 1.1.0\n';
+     errortext += 'or higher applied to your project. The update\n';
+     errortext += 'is absolutely needed for YEP_SaveCore\n';
+     errortext += 'to run. Your game will not start until you\n';
+     errortext += 'have updated your project\'s files to at\n';
+     errortext += 'least version 1.1.0 or higher or if you choose\n';
+     errortext += 'to not use the YEP_SaveCore plugin.'
+     errortext += '\n\n'
+     errortext += 'Find the latest version at http://forums.rpgmakerweb.com/';
+     errortext += '\n\n'
+     errortext += 'If you do have MV version 1.1.0 or higher\n';
+     errortext += 'and you are still getting this message, it is\n';
+     errortext += 'because this project\'s rpg_core.js, rpg_managers.js,\n';
+     errortext += 'rpg_objects.js, rpg_scenes.js, rpg_sprites.js, and\n';
+     errortext += 'rpg_windows.js aren\'t updated. Create a new project\n';
+     errortext += 'or go to the NewData folder in your RPG Maker MV root\n';
+     errortext += 'folder. Copy the new js files (except plugins.js so it\n';
+     errortext += 'won\'t overwrite your Plugin Manager Parameters) to\n';
+     errortext += 'your current project!';
+  SceneManager.run = function(sceneClass) {
+    require('nw.gui').Window.get().showDevTools();
+    throw new Error(errortext);
+  };
+};
+
 //=============================================================================
 // Parameter Variables
 //=============================================================================

@@ -11,7 +11,7 @@ Yanfly.Party = Yanfly.Party || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.08 Replaces the default 'Formation' command with a new
+ * @plugindesc v1.09 Replaces the default 'Formation' command with a new
  * menu for players to easily change party formations.
  * @author Yanfly Engine Plugins
  *
@@ -215,6 +215,11 @@ Yanfly.Party = Yanfly.Party || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.09:
+ * - Fixed a bug that caused party members to not index themselves properly in
+ * battle. When in battle, actor index will now refer to the index of their
+ * battle member positions.
+ *
  * Version 1.08:
  * - Added 'EXP Distribution' parameter into the plugin parameters. Enabling
  * this will cause the EXP distributed to party members to be divided based on
@@ -380,6 +385,16 @@ Yanfly.Party.Game_Actor_isFormationChangeOk =
 Game_Actor.prototype.isFormationChangeOk = function() {
     if (this._locked) return false;
     return Yanfly.Party.Game_Actor_isFormationChangeOk.call(this);
+};
+
+Yanfly.Party.Game_Actor_index = Game_Actor.prototype.index;
+Game_Actor.prototype.index = function() {
+    if ($gameParty.inBattle()) {
+      return $gameParty.battleMembers().indexOf(this);
+    } else {
+      return Yanfly.Party.Game_Actor_index.call(this);
+    }
+    return $gameParty.members().indexOf(this);
 };
 
 //=============================================================================

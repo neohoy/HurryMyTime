@@ -11,7 +11,7 @@ Yanfly.Ele = Yanfly.Ele || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.01 Manage the way elements work in this game from
+ * @plugindesc v1.02 Manage the way elements work in this game from
  * absorbing elements, reflecting elements, and more!
  * @author Yanfly Engine Plugins
  *
@@ -90,13 +90,23 @@ Yanfly.Ele = Yanfly.Ele || {};
  *   or item has multiple elements, the reflect rate is added for each element
  *   used by the skill/item.
  *
+ *   <Element Magnify x: +y%>
+ *   <Element Magnify x: -y%>
+ *   <Element Magnify name: +y%>
+ *   <Element Magnify name: -y%>
+ *   - If the user performs a skill or item that utilizes element x (or name),
+ *   increase or decrease its damage by y%. If a skill or item has multiple
+ *   elements, the rate is increased additively for each element and adjusted
+ *   multiplicatively with base rate. This bottoms out at 0%.
+ *
  *   <Element Amplify x: +y%>
  *   <Element Amplify x: -y%>
  *   <Element Amplify name: +y%>
  *   <Element Amplify name: -y%>
  *   - If the user performs a skill or item that utilizes element x (or name),
  *   increase or decrease its damage by y%. If a skill or item has multiple
- *   elements, the rate is increased additively for each element.
+ *   elements, the rate is increased additively for each element and adjusted
+ *   additively for base rate.
  *
  *   <Element Null>
  *   - This will cause the battler to not have elemental attacks when using
@@ -172,6 +182,12 @@ Yanfly.Ele = Yanfly.Ele || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.02:
+ * - Added <Element x Magnify: +y%>, <Element x Magnify: -y%> notetags. These
+ * notetags different from the Amplify counterparts in a way where the Amplify
+ * notetags will shift the element rate additively. These will alter the rate
+ * multiplicatively.
  *
  * Version 1.01:
  * - Optimized element rate calculation where if no elements are present, then
@@ -281,6 +297,8 @@ DataManager.processElementNotetags2 = function(group) {
   var noteB2 = /<(?:ELEMENT REFLECT)[ ](.*):[ ]([\+\-]\d+)([%％])>/i;
   var noteC1 = /<(?:ELEMENT AMPLIFY)[ ](\d+):[ ]([\+\-]\d+)([%％])>/i;
   var noteC2 = /<(?:ELEMENT AMPLIFY)[ ](.*):[ ]([\+\-]\d+)([%％])>/i;
+  var noteC3 = /<(?:ELEMENT MAGNIFY)[ ](\d+):[ ]([\+\-]\d+)([%％])>/i;
+  var noteC4 = /<(?:ELEMENT MAGNIFY)[ ](.*):[ ]([\+\-]\d+)([%％])>/i;
   var noteD1 = /<FORCE ELEMENT[ ](\d+)[ ]RATE:[ ](\d+)([%％])>/i;
   var noteD2 = /<FORCE ELEMENT[ ](\d+)[ ]RATE:[ ]-(\d+)([%％])>/i;
   var noteD3 = /<FORCE ELEMENT[ ](.*)[ ]RATE:[ ](\d+)([%％])>/i;
@@ -292,6 +310,7 @@ DataManager.processElementNotetags2 = function(group) {
     obj.elementAbsorb = [];
     obj.elementReflect = {};
     obj.elementAmplify = {};
+    obj.elementMagnify = {};
     obj.elementNull = false;
     obj.elementForcedRate = {};
 
@@ -336,6 +355,17 @@ DataManager.processElementNotetags2 = function(group) {
         if (Yanfly.ElementIdRef[name]) {
           var id = Yanfly.ElementIdRef[name];
           obj.elementAmplify[id] = rate;
+        }
+      } else if (line.match(noteC3)) {
+        var elementId = parseInt(RegExp.$1);
+        var rate = parseFloat(RegExp.$2 * 0.01);
+        obj.elementMagnify[elementId] = rate;
+      } else if (line.match(noteC4)) {
+        var name = String(RegExp.$1).toUpperCase().trim();
+        var rate = parseFloat(RegExp.$2 * 0.01);
+        if (Yanfly.ElementIdRef[name]) {
+          var id = Yanfly.ElementIdRef[name];
+          obj.elementMagnify[id] = rate;
         }
       } else if (line.match(/<(?:ELEMENT NULL)>/i)) {
         obj.elementNull = true;
@@ -468,6 +498,12 @@ Game_BattlerBase.prototype.getObjElementAmplifyRate = function(obj, elementId) {
   return obj.elementAmplify[elementId] || 0;
 };
 
+Game_BattlerBase.prototype.getObjElementMagnifyRate = function(obj, elementId) {
+  if (!obj) return 0;
+  if (!obj.elementMagnify) return 0;
+  return obj.elementMagnify[elementId] || 0;
+};
+
 Game_BattlerBase.prototype.getObjElementForcedRate = function(obj, elementId) {
   if (!obj) return undefined;
   if (!obj.elementForcedRate) return undefined;
@@ -482,7 +518,9 @@ Game_Battler.prototype.isAbsorbElement = function(elementId) {
   var length = this.states().length;
   for (var i = 0; i < length; ++i) {
     var state = this.states()[i];
-    if (state && state.elementAbsorb.contains(elementId)) return true;
+    if (!state) continue;
+    if (!state.elementAbsorb) continue;
+    if (state.elementAbsorb.contains(elementId)) return true;
   }
   return false;
 };
@@ -503,6 +541,16 @@ Game_Battler.prototype.elementAmplifyRate = function(elementId) {
   for (var i = 0; i < length; ++i) {
     var obj = this.states()[i];
     rate += this.getObjElementAmplifyRate(obj, elementId);
+  }
+  return rate;
+};
+
+Game_Battler.prototype.elementMagnifyRate = function(elementId) {
+  var rate = 1;
+  var length = this.states().length;
+  for (var i = 0; i < length; ++i) {
+    var obj = this.states()[i];
+    rate += this.getObjElementMagnifyRate(obj, elementId);
   }
   return rate;
 };
@@ -536,7 +584,9 @@ Game_Actor.prototype.isAbsorbElement = function(elementId) {
   var length = this.equips().length;
   for (var i = 0; i < length; ++i) {
     var equip = this.equips()[i];
-    if (equip && equip.elementAbsorb.contains(elementId)) return true;
+    if (!equip) continue;
+    if (!equip.elementAbsorb) continue;
+    if (equip.elementAbsorb.contains(elementId)) return true;
   }
   return Game_Battler.prototype.isAbsorbElement.call(this, elementId);
 };
@@ -562,6 +612,18 @@ Game_Actor.prototype.elementAmplifyRate = function(elementId) {
   }
   rate += this.getObjElementAmplifyRate(this.actor(), elementId);
   rate += this.getObjElementAmplifyRate(this.currentClass(), elementId);
+  return rate;
+};
+
+Game_Actor.prototype.elementMagnifyRate = function(elementId) {
+  var rate = Game_Battler.prototype.elementMagnifyRate.call(this, elementId);
+  var length = this.equips().length;
+  for (var i = 0; i < length; ++i) {
+    var obj = this.equips()[i];
+    rate += this.getObjElementMagnifyRate(obj, elementId);
+  }
+  rate += this.getObjElementMagnifyRate(this.actor(), elementId);
+  rate += this.getObjElementMagnifyRate(this.currentClass(), elementId);
   return rate;
 };
 
@@ -613,6 +675,12 @@ Game_Enemy.prototype.elementAmplifyRate = function(elementId) {
   return rate;
 };
 
+Game_Enemy.prototype.elementMagnifyRate = function(elementId) {
+  var rate = Game_Battler.prototype.elementMagnifyRate.call(this, elementId);
+  rate += this.getObjElementMagnifyRate(this.enemy(), elementId);
+  return rate;
+};
+
 Game_Enemy.prototype.isNullElement = function() {
   if (this.enemy().elementNull) return true;
   return Game_Battler.prototype.isNullElement.call(this);
@@ -658,9 +726,9 @@ Game_Action.prototype.calcElementRate = function(target) {
   while (elements.length > 0) {
     var elementId = elements.shift();
     var eleRate = target.elementRate(elementId);
+    eleRate *= Math.max(0, this.subject().elementMagnifyRate(elementId));
     var absorbed = eleRate < 0;
     eleRate += this.subject().elementAmplifyRate(elementId);
-    if (absorbed) eleRate = Math.min(eleRate, -0.01);
     if (rule === 0) { // Lowest Rate
       finalRate = finalRate || eleRate;
       finalRate = Math.min(finalRate, eleRate);

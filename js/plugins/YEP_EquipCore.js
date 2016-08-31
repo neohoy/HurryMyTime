@@ -11,7 +11,7 @@ Yanfly.Equip = Yanfly.Equip || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.14 Allows for the equipment system to be more flexible to
+ * @plugindesc v1.15 Allows for the equipment system to be more flexible to
  * allow for unique equipment slots per class.
  * @author Yanfly Engine Plugins
  *
@@ -159,6 +159,9 @@ Yanfly.Equip = Yanfly.Equip || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.15:
+ * - Optimization update.
  *
  * Version 1.14:
  * - Added an actor refresh upon listing the various equip slots to ensure that
@@ -1025,7 +1028,7 @@ Scene_Equip.prototype.onItemCancel = function() {
 
 Scene_Equip.prototype.update = function() {
     Scene_MenuBase.prototype.update.call(this);
-    this.updateLowerRightWindowTriggers()
+    if (this.isActive()) this.updateLowerRightWindowTriggers();
 };
 
 Scene_Equip.prototype.updateLowerRightWindowTriggers = function() {

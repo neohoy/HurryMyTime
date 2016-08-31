@@ -11,7 +11,7 @@ Yanfly.BSC = Yanfly.BSC || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.09b Alter the basic mechanics behind buffs and states
+ * @plugindesc v1.10b Alter the basic mechanics behind buffs and states
  * that aren't adjustable within the RPG Maker editor.
  * @author Yanfly Engine Plugins
  *
@@ -92,6 +92,11 @@ Yanfly.BSC = Yanfly.BSC || {};
  * @desc The formula used for buff rate calculation.
  * Default: this._buffs[paramId] * 0.25 + 1.0
  * @default this._buffs[paramId] * 0.25 + 1.0
+ *
+ * @param Show Buff Rate
+ * @desc Shows the buff/debuff rate for buffs and debuffs.
+ * YES - true     NO - false
+ * @default false
  *
  * @param ---State Settings---
  * @default
@@ -540,7 +545,7 @@ Yanfly.BSC = Yanfly.BSC || {};
  *   - This will add to the counter value for the state. The counter must be
  *   a number in order for this to work.
  *
- *   battler.clampStateCounter(stateId, value, min, max);
+ *   battler.clampStateCounter(stateId, min, max);
  *   - This will set a minimum and maximum value for the counter value of the
  *   particular state. The counter must be a number in order for this to work.
  *
@@ -553,6 +558,12 @@ Yanfly.BSC = Yanfly.BSC || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.10b:
+ * - Added new plugin parameter: Show Buff Rate. This will display the current
+ * buff or debuff rate on the buff icon.
+ * - Optimization Update.
+ * - Documentation fix for battler.clampStateCounter(stateId, min, max).
  *
  * Version 1.09b:
  * - Added new plugin parameters: Show Enemy Icons, Enemy Buff Turn, Enemy
@@ -627,6 +638,8 @@ Yanfly.Param.BSCEnemyCounter = eval(Yanfly.Param.BSCEnemyCounter);
 Yanfly.Param.BSCDefaultLimit = Number(Yanfly.Parameters['Default Limit']);
 Yanfly.Param.BSCMaximumLimit = Number(Yanfly.Parameters['Maximum Limit']);
 Yanfly.Param.BSCBuffFormula = String(Yanfly.Parameters['Buff Formula']);
+Yanfly.Param.BSCShowBuffRate = String(Yanfly.Parameters['Show Buff Rate']);
+Yanfly.Param.BSCShowBuffRate = eval(Yanfly.Param.BSCShowBuffRate);
 
 Yanfly.Param.BSCReapplyRules = Number(Yanfly.Parameters['Reapply Rules']);
 Yanfly.Param.BSCShowEnemyTurns = String(Yanfly.Parameters['Show Enemy Turns']);
@@ -1360,8 +1373,8 @@ Game_Battler.prototype.regenerateStateEffects = function(stateId) {
 
 Yanfly.BSC.Game_Battler_regenerateAll = Game_Battler.prototype.regenerateAll;
 Game_Battler.prototype.regenerateAll = function() {
-    Yanfly.BSC.Game_Battler_regenerateAll.call(this);
     this.onRegenerateStateEffects();
+    Yanfly.BSC.Game_Battler_regenerateAll.call(this);
 };
 
 if (Imported.YEP_BattleEngineCore) {
@@ -1794,7 +1807,12 @@ Sprite_StateIcon.prototype.updateTurnAndCounter = function() {
     if (group.length <= 0) return;
     var state = group[this._animationIndex];
     if (typeof state === 'number') {
-      if (Yanfly.Param.BSCEnemyBTurn) this.drawBuffTurns(state);
+      if (Yanfly.Param.BSCEnemyBTurn) {
+        this.drawBuffTurns(state);
+        if (Yanfly.Param.BSCShowBuffRate) {
+          this.drawBuffRate(state)
+        }
+      }
     } else {
       if (Yanfly.Param.BSCEnemyTurn) this.drawStateTurns(state);
       if (Yanfly.Param.BSCEnemyCounter) this.drawStateCounter(state);
@@ -1855,6 +1873,20 @@ Sprite_StateIcon.prototype.drawBuffTurns = function(paramId) {
     contents.drawText(turns, wx, wy, ww, wh, Yanfly.Param.BSCTurnAlign);
 };
 
+Sprite_StateIcon.prototype.drawBuffRate = function(paramId) {
+    if (!Yanfly.Param.BSCShowTurns) return;
+    var value = this._battler.paramBuffRate(paramId);
+    var text = Math.floor(value * 100) + '%';
+    var wx = Yanfly.Param.BSCCounterBufferX || 0;
+    var wy = (Yanfly.Param.BSCCounterBufferY || 8) - 2;
+    var ww = Window_Base._iconWidth;
+    var wh = Window_Base.prototype.lineHeight.call(this);
+    var contents = this._turnCounterSprite.bitmap;
+    contents.fontSize = Yanfly.Param.BSCFontSize * 0.75;
+    contents.textColor = this.textColor(0);
+    contents.drawText(text, wx, wy, ww, wh, 'center');
+};
+
 }; // Yanfly.Param.BSCShowEnemyIcon
 
 //=============================================================================
@@ -1863,84 +1895,100 @@ Sprite_StateIcon.prototype.drawBuffTurns = function(paramId) {
 
 Yanfly.BSC.Window_Base_drawActorIcons = Window_Base.prototype.drawActorIcons;
 Window_Base.prototype.drawActorIcons = function(actor, wx, wy, ww) {
-    ww = ww || 144;
-    Yanfly.BSC.Window_Base_drawActorIcons.call(this, actor, wx, wy, ww);
-    this.drawActorIconsTurns(actor, wx, wy, ww);
+  ww = ww || 144;
+  Yanfly.BSC.Window_Base_drawActorIcons.call(this, actor, wx, wy, ww);
+  this.drawActorIconsTurns(actor, wx, wy, ww);
 };
 
 Window_Base.prototype.drawActorIconsTurns = function(actor, wx, wy, ww) {
-    var iw = Window_Base._iconWidth;
-    var icons = actor.allIcons().slice(0, Math.floor(ww / iw));
-    var max = icons.length;
-    var shownMax = Math.floor(ww / iw);
-    for (var i = 0; i < actor.states().length; ++i) {
-      if (shownMax <= 0) break;
-      var state = actor.states()[i];
-      if (state.iconIndex <= 0) continue;
-      if (state.autoRemovalTiming > 0) {
-        this.drawStateTurns(actor, state, wx, wy);
-      }
-      this.drawStateCounter(actor, state, wx, wy);
-      wx += iw;
-      --shownMax;
+  var iw = Window_Base._iconWidth;
+  var icons = actor.allIcons().slice(0, Math.floor(ww / iw));
+  var max = icons.length;
+  var shownMax = Math.floor(ww / iw);
+  for (var i = 0; i < actor.states().length; ++i) {
+    if (shownMax <= 0) break;
+    var state = actor.states()[i];
+    if (state.iconIndex <= 0) continue;
+    if (state.autoRemovalTiming > 0) {
+      this.drawStateTurns(actor, state, wx, wy);
     }
-    for (var i = 0; i < 8; ++i) {
-      if (shownMax <= 0) break;
-      if (actor._buffs[i] === 0) continue;
-      this.drawBuffTurns(actor, i, wx, wy);
-      wx += iw;
-      --shownMax;
+    this.drawStateCounter(actor, state, wx, wy);
+    wx += iw;
+    --shownMax;
+  }
+  for (var i = 0; i < 8; ++i) {
+    if (shownMax <= 0) break;
+    if (actor._buffs[i] === 0) continue;
+    this.drawBuffTurns(actor, i, wx, wy);
+    if (Yanfly.Param.BSCShowBuffRate) {
+      this.drawBuffRate(actor, i, wx, wy);
     }
-    this.resetFontSettings();
-    this.resetTextColor();
+    wx += iw;
+    --shownMax;
+  }
+  this.resetFontSettings();
+  this.resetTextColor();
 };
 
 Window_Base.prototype.drawStateTurns = function(actor, state, wx, wy) {
-    if (!state.showTurns) return;
-    var turns = actor.stateTurns(state.id);
-    if (turns !== 0 && !turns) return;
-    var turns = Yanfly.Util.toGroup(Math.ceil(turns));
-    wx += state.turnBufferX;
-    wy += state.turnBufferY;
-    this.changePaintOpacity(true);
-    this.changeTextColor(this.textColor(state.turnColor));
-    this.contents.fontSize = state.turnFontSize;
-    this.drawText(turns, wx, wy, Window_Base._iconWidth, state.turnAlign);
-    this.resetFontSettings();
-    this.resetTextColor();
+  if (!state.showTurns) return;
+  var turns = actor.stateTurns(state.id);
+  if (turns !== 0 && !turns) return;
+  var turns = Yanfly.Util.toGroup(Math.ceil(turns));
+  wx += state.turnBufferX;
+  wy += state.turnBufferY;
+  this.changePaintOpacity(true);
+  this.changeTextColor(this.textColor(state.turnColor));
+  this.contents.fontSize = state.turnFontSize;
+  this.drawText(turns, wx, wy, Window_Base._iconWidth, state.turnAlign);
+  this.resetFontSettings();
+  this.resetTextColor();
 };
 
 Window_Base.prototype.drawStateCounter = function(actor, state, wx, wy) {
-    var value = actor.getStateCounter(state.id);
-    if (value === undefined) return;
-    var settings = state.stateCounterSettings;
-    value = Yanfly.Util.toGroup(value);
-    wx += settings.bufferX;
-    wy += settings.bufferY;
-    this.changePaintOpacity(true);
-    this.changeTextColor(this.textColor(settings.color));
-    this.contents.fontSize = settings.size;
-    this.drawText(value, wx, wy, Window_Base._iconWidth, settings.align);
-    this.resetFontSettings();
-    this.resetTextColor();
+  var value = actor.getStateCounter(state.id);
+  if (value === undefined) return;
+  var settings = state.stateCounterSettings;
+  value = Yanfly.Util.toGroup(value);
+  wx += settings.bufferX;
+  wy += settings.bufferY;
+  this.changePaintOpacity(true);
+  this.changeTextColor(this.textColor(settings.color));
+  this.contents.fontSize = settings.size;
+  this.drawText(value, wx, wy, Window_Base._iconWidth, settings.align);
+  this.resetFontSettings();
+  this.resetTextColor();
 };
 
 Window_Base.prototype.drawBuffTurns = function(actor, paramId, wx, wy) {
-    if (!Yanfly.Param.BSCShowTurns) return;
-    var turns = Yanfly.Util.toGroup(Math.ceil(actor.buffTurns(paramId)));
-    wx += Yanfly.Param.BSCTurnBufferX;
-    wy += Yanfly.Param.BSCTurnBufferY;
-    this.changePaintOpacity(true);
-    this.contents.fontSize = Yanfly.Param.BSCFontSize;
-    if (actor.isBuffAffected(paramId)) {
-      this.changeTextColor(this.textColor(Yanfly.Param.BSCBuffColor));
-    } else {
-      this.changeTextColor(this.textColor(Yanfly.Param.BSCDebuffColor));
-    }
-    var align = Yanfly.Param.BSCTurnAlign;
-    this.drawText(turns, wx, wy, Window_Base._iconWidth, align);
-    this.resetFontSettings();
-    this.resetTextColor();
+  if (!Yanfly.Param.BSCShowTurns) return;
+  var turns = Yanfly.Util.toGroup(Math.ceil(actor.buffTurns(paramId)));
+  wx += Yanfly.Param.BSCTurnBufferX;
+  wy += Yanfly.Param.BSCTurnBufferY;
+  this.changePaintOpacity(true);
+  this.contents.fontSize = Yanfly.Param.BSCFontSize;
+  if (actor.isBuffAffected(paramId)) {
+    this.changeTextColor(this.textColor(Yanfly.Param.BSCBuffColor));
+  } else {
+    this.changeTextColor(this.textColor(Yanfly.Param.BSCDebuffColor));
+  }
+  var align = Yanfly.Param.BSCTurnAlign;
+  this.drawText(turns, wx, wy, Window_Base._iconWidth, align);
+  this.resetFontSettings();
+  this.resetTextColor();
+};
+
+Window_Base.prototype.drawBuffRate = function(actor, paramId, wx, wy) {
+  var value = actor.paramBuffRate(paramId);
+  if (value === undefined) return;
+  value = Math.floor(value * 100) + '%';
+  this.contents.fontSize = (Yanfly.Param.BSCCounterSize || 16) * 0.75;
+  wx += Yanfly.Param.BSCCounterBufferX || 0;
+  wy += Yanfly.Param.BSCCounterBufferY || 8;
+  this.changePaintOpacity(true);
+  this.drawText(value, wx, wy, Window_Base._iconWidth, 'center');
+  this.resetFontSettings();
+  this.resetTextColor();
 };
 
 //=============================================================================

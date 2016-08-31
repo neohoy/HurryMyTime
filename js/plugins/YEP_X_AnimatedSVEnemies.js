@@ -11,7 +11,7 @@ Yanfly.SVE = Yanfly.SVE || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.09 (Requires YEP_BattleEngineCore.js) This plugin lets
+ * @plugindesc v1.12 (Requires YEP_BattleEngineCore.js) This plugin lets
  * you use Animated Sideview Actors for enemies!
  * @author Yanfly Engine Plugins
  *
@@ -713,6 +713,19 @@ Yanfly.SVE = Yanfly.SVE || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.12:
+ * - Fixed a bug that caused the <Sideview Show State Overlay> and 
+ * <Sideview Hide State Overlay> notetags to not work.
+ * - Fixed a bug that caused scaled enemies to have their state icons and
+ * overlays appear in odd places.
+ *
+ * Version 1.11:
+ * - Fixed a bug that caused hidden enemies to appear early on.
+ *
+ * Version 1.10:
+ * - Optimized plugin to use less resources. Animated enemies will no longer
+ * have a static graphic once the game is loaded.
+ *
  * Version 1.09:
  * - Added a fix for state icons appearing behind battlers for the users who
  * aren't using the Action Sequence Packs.
@@ -805,12 +818,12 @@ Yanfly.Param.SVEWeaponMotion = {};
 Yanfly.Param.SVEWeaponAnimation = {};
 Yanfly.Param.SVEWeaponMotion[0] = Yanfly.Param.SVEAttackMotion.toLowerCase();
 for (Yanfly.i = 1; Yanfly.i < 31; ++Yanfly.i) {
-	Yanfly.s1 = 'Weapon ' + Yanfly.i + ' Motion';
-	Yanfly.s2 = String(Yanfly.Parameters[Yanfly.s1]);
-	Yanfly.Param.SVEWeaponMotion[Yanfly.i] = Yanfly.s2.toLowerCase();
-	Yanfly.s1 = 'Weapon ' + Yanfly.i + ' Animation';
-	Yanfly.s2 = Number(Yanfly.Parameters[Yanfly.s1]);
-	Yanfly.Param.SVEWeaponAnimation[Yanfly.i] = Yanfly.s2;
+  Yanfly.s1 = 'Weapon ' + Yanfly.i + ' Motion';
+  Yanfly.s2 = String(Yanfly.Parameters[Yanfly.s1]);
+  Yanfly.Param.SVEWeaponMotion[Yanfly.i] = Yanfly.s2.toLowerCase();
+  Yanfly.s1 = 'Weapon ' + Yanfly.i + ' Animation';
+  Yanfly.s2 = Number(Yanfly.Parameters[Yanfly.s1]);
+  Yanfly.Param.SVEWeaponAnimation[Yanfly.i] = Yanfly.s2;
 };
 
 //=============================================================================
@@ -821,18 +834,18 @@ Yanfly.SVE.DataManager_isDatabaseLoaded = DataManager.isDatabaseLoaded;
 DataManager.isDatabaseLoaded = function() {
   if (!Yanfly.SVE.DataManager_isDatabaseLoaded.call(this)) return false;
   if (!Yanfly._loaded_YEP_X_AnimatedSVEnemies) {
-  	this.processSVENotetags1($dataEnemies);
+    this.processSVENotetags1($dataEnemies);
     this.processSVENotetags2($dataStates);
     Yanfly._loaded_YEP_X_AnimatedSVEnemies = true;
   }
-	return true;
+  return true;
 };
 
 DataManager.processSVENotetags1 = function(group) {
   var noteWeapon = /<(?:SIDEVIEW WEAPON):[ ](\d+),[ ](.*),[ ](\d+)>/i;
-	for (var n = 1; n < group.length; n++) {
-		var obj = group[n];
-		var notedata = obj.note.split(/[\r\n]+/);
+  for (var n = 1; n < group.length; n++) {
+    var obj = group[n];
+    var notedata = obj.note.split(/[\r\n]+/);
 
     obj.sideviewBattler = [];
     obj.sideviewAttackMotion = Yanfly.Param.SVEAttackMotion.toLowerCase();
@@ -868,8 +881,8 @@ DataManager.processSVENotetags1 = function(group) {
     obj.sideviewFloatHeight = Yanfly.Param.SVEFloatHeight;
     obj.sideviewStateOverlay = Yanfly.Param.SVEOverlay;
 
-		for (var i = 0; i < notedata.length; i++) {
-			var line = notedata[i];
+    for (var i = 0; i < notedata.length; i++) {
+      var line = notedata[i];
        if (line.match(/<(?:SCALE SPRITE):[ ](\d+)([%％])>/i)) {
         obj.spriteScaleX = parseFloat(RegExp.$1) * 0.01;
         obj.spriteScaleY = obj.spriteScaleX;
@@ -878,33 +891,33 @@ DataManager.processSVENotetags1 = function(group) {
       } else if (line.match(/<(?:SCALE SPRITE HEIGHT):[ ](\d+)([%％])>/i)) {
         obj.spriteScaleY = parseFloat(RegExp.$1) * 0.01;
       } else if (line.match(/<(?:SIDEVIEW BATTLER):[ ](.*)>/i)) {
-				obj.sideviewBattler.push(String(RegExp.$1));
+        obj.sideviewBattler.push(String(RegExp.$1));
         obj.sideviewBreathing = [2, 3].contains(Yanfly.Param.SVEBreathing);
-			} else if (line.match(/<(?:SIDEVIEW ATTACK MOTION):[ ](.*)>/i)) {
-				obj.sideviewAttackMotion = String(RegExp.$1).toLowerCase();
-			} else if (line.match(/<(?:SIDEVIEW IDLE MOTION):[ ](.*)>/i)) {
-				obj.sideviewIdleMotion.push(String(RegExp.$1).toLowerCase());
-			} else if (line.match(/<(?:SIDEVIEW DAMAGE MOTION):[ ](.*)>/i)) {
-				obj.sideviewDmgMotion = String(RegExp.$1).toLowerCase();
-			} else if (line.match(/<(?:SIDEVIEW EVADE MOTION):[ ](.*)>/i)) {
-				obj.sideviewEvadeMotion = String(RegExp.$1).toLowerCase();
-			} else if (line.match(/<(?:SIDEVIEW ESCAPE MOTION):[ ](.*)>/i)) {
-				obj.sideviewEscMotion = String(RegExp.$1).toLowerCase();
-			} else if (line.match(/<(?:SIDEVIEW GUARD MOTION):[ ](.*)>/i)) {
-				obj.sideviewGuardMotion = String(RegExp.$1).toLowerCase();
-			} else if (line.match(/<(?:SIDEVIEW ABNORMAL MOTION):[ ](.*)>/i)) {
-				obj.sideviewAbnMotion = String(RegExp.$1).toLowerCase();
-			} else if (line.match(/<(?:SIDEVIEW SLEEP MOTION):[ ](.*)>/i)) {
-				obj.sideviewSleepMotion = String(RegExp.$1).toLowerCase();
-			} else if (line.match(/<(?:SIDEVIEW DYING MOTION):[ ](.*)>/i)) {
-				obj.sideviewDyingMotion = String(RegExp.$1).toLowerCase();
-			} else if (line.match(/<(?:SIDEVIEW DEAD MOTION):[ ](.*)>/i)) {
-				obj.sideviewDeadMotion = String(RegExp.$1).toLowerCase();
-			} else if (line.match(/<(?:SIDEVIEW ANCHOR X):[ ](\d+)[.](\d+)>/i)) {
-				obj.sideviewAnchorX = eval(String(RegExp.$1) + '.' + String(RegExp.$2));
-			} else if (line.match(/<(?:SIDEVIEW ANCHOR Y):[ ](\d+)[.](\d+)>/i)) {
-				obj.sideviewAnchorY = eval(String(RegExp.$1) + '.' + String(RegExp.$2));
-			} else if (line.match(/<(?:SIDEVIEW WEAPON):[ ](\d+)>/i)) {
+      } else if (line.match(/<(?:SIDEVIEW ATTACK MOTION):[ ](.*)>/i)) {
+        obj.sideviewAttackMotion = String(RegExp.$1).toLowerCase();
+      } else if (line.match(/<(?:SIDEVIEW IDLE MOTION):[ ](.*)>/i)) {
+        obj.sideviewIdleMotion.push(String(RegExp.$1).toLowerCase());
+      } else if (line.match(/<(?:SIDEVIEW DAMAGE MOTION):[ ](.*)>/i)) {
+        obj.sideviewDmgMotion = String(RegExp.$1).toLowerCase();
+      } else if (line.match(/<(?:SIDEVIEW EVADE MOTION):[ ](.*)>/i)) {
+        obj.sideviewEvadeMotion = String(RegExp.$1).toLowerCase();
+      } else if (line.match(/<(?:SIDEVIEW ESCAPE MOTION):[ ](.*)>/i)) {
+        obj.sideviewEscMotion = String(RegExp.$1).toLowerCase();
+      } else if (line.match(/<(?:SIDEVIEW GUARD MOTION):[ ](.*)>/i)) {
+        obj.sideviewGuardMotion = String(RegExp.$1).toLowerCase();
+      } else if (line.match(/<(?:SIDEVIEW ABNORMAL MOTION):[ ](.*)>/i)) {
+        obj.sideviewAbnMotion = String(RegExp.$1).toLowerCase();
+      } else if (line.match(/<(?:SIDEVIEW SLEEP MOTION):[ ](.*)>/i)) {
+        obj.sideviewSleepMotion = String(RegExp.$1).toLowerCase();
+      } else if (line.match(/<(?:SIDEVIEW DYING MOTION):[ ](.*)>/i)) {
+        obj.sideviewDyingMotion = String(RegExp.$1).toLowerCase();
+      } else if (line.match(/<(?:SIDEVIEW DEAD MOTION):[ ](.*)>/i)) {
+        obj.sideviewDeadMotion = String(RegExp.$1).toLowerCase();
+      } else if (line.match(/<(?:SIDEVIEW ANCHOR X):[ ](\d+)[.](\d+)>/i)) {
+        obj.sideviewAnchorX = eval(String(RegExp.$1) + '.' + String(RegExp.$2));
+      } else if (line.match(/<(?:SIDEVIEW ANCHOR Y):[ ](\d+)[.](\d+)>/i)) {
+        obj.sideviewAnchorY = eval(String(RegExp.$1) + '.' + String(RegExp.$2));
+      } else if (line.match(/<(?:SIDEVIEW WEAPON):[ ](\d+)>/i)) {
         var weaponId = parseInt(RegExp.$1);
         var motionId = Yanfly.Param.SVEWeaponMotion[weaponId].toLowerCase();
         var aniId = Yanfly.Param.SVEWeaponAnimation[weaponId];
@@ -929,10 +942,10 @@ DataManager.processSVENotetags1 = function(group) {
       } else if (line.match(/<(?:SIDEVIEW HIDE SHADOW)>/i)) {
         obj.sideviewShadowShow = false;
       } else if (line.match(/<(?:SIDEVIEW SHADOW WIDTH):[ ](\d+)([%％])>/i)) {
-				obj.sideviewShadowScaleX = parseFloat(RegExp.$1 * 0.01);
-			} else if (line.match(/<(?:SIDEVIEW SHADOW HEIGHT):[ ](\d+)([%％])>/i)) {
-				obj.sideviewShadowScaleY = parseFloat(RegExp.$1 * 0.01);
-			} else if (line.match(/<(?:SIDEVIEW FRAME SPEED):[ ](\d+)>/i)) {
+        obj.sideviewShadowScaleX = parseFloat(RegExp.$1 * 0.01);
+      } else if (line.match(/<(?:SIDEVIEW SHADOW HEIGHT):[ ](\d+)([%％])>/i)) {
+        obj.sideviewShadowScaleY = parseFloat(RegExp.$1 * 0.01);
+      } else if (line.match(/<(?:SIDEVIEW FRAME SPEED):[ ](\d+)>/i)) {
         obj.sideviewFrameSpeed = parseInt(RegExp.$1);
       } else if (line.match(/<(?:FLOATING|float)>/i)) {
         obj.sideviewFloating = true;
@@ -948,7 +961,7 @@ DataManager.processSVENotetags1 = function(group) {
       } else if (line.match(/<SIDEVIEW HIDE STATE OVERLAY>/i)) {
         obj.sideviewStateOverlay = false;
       }
-		}
+    }
     // Breathing
     for (var i = 0; i < notedata.length; i++) {
       var line = notedata[i];
@@ -970,18 +983,25 @@ DataManager.processSVENotetags1 = function(group) {
         obj.sideviewLinkBreathing = false;
       }
     }
-		// Create Defaults
-		if (obj.sideviewIdleMotion.length <= 0) {
-			obj.sideviewIdleMotion = [Yanfly.Param.SVEIdleMotion.toLowerCase()];
-		}
-		if (obj.sideviewWeaponImage.length <= 0) {
-			var weaponId = Yanfly.Param.SVEWeaponIndex;
-			var motionId = Yanfly.Param.SVEWeaponMotion[weaponId].toLowerCase();
-			var aniId = Yanfly.Param.SVEWeaponAnimation[weaponId];
-			obj.sideviewWeaponImage = [[weaponId, motionId, aniId]];
-		}
+    // Create Defaults
+    if (obj.sideviewIdleMotion.length <= 0) {
+      obj.sideviewIdleMotion = [Yanfly.Param.SVEIdleMotion.toLowerCase()];
+    }
+    if (obj.sideviewWeaponImage.length <= 0) {
+      var weaponId = Yanfly.Param.SVEWeaponIndex;
+      var motionId = Yanfly.Param.SVEWeaponMotion[weaponId].toLowerCase();
+      var aniId = Yanfly.Param.SVEWeaponAnimation[weaponId];
+      obj.sideviewWeaponImage = [[weaponId, motionId, aniId]];
+    }
     obj.sideviewFrameSpeed = Math.max(1, obj.sideviewFrameSpeed);
-	}
+    if (obj.sideviewBattler.length > 0) {
+      if (Imported.YEP_X_BattleSysCTB) {
+        Yanfly.Param.CTBEnemySVBattler = true;
+      }
+      obj.battlerName = '';
+      obj.battlerHue = 0;
+    }
+  }
 };
 
 DataManager.processSVENotetags2 = function(group) {
@@ -1027,7 +1047,7 @@ Game_Battler.prototype.spriteWidth = function() {
     } else {
       var value = Yanfly.SVE.Game_Battler_spriteWidth.call(this);
     }
-    value *= Math.abs(this.spriteScaleX());
+    //value *= Math.abs(this.spriteScaleX());
     return Math.floor(value);
 };
 
@@ -1038,7 +1058,7 @@ Game_Battler.prototype.spriteHeight = function() {
     } else {
       var value = Yanfly.SVE.Game_Battler_spriteHeight.call(this);
     }
-    value *= Math.abs(this.spriteScaleY());
+    //value *= Math.abs(this.spriteScaleY());
     return Math.floor(value);
 };
 
@@ -1076,20 +1096,20 @@ Game_Enemy.prototype.setupSVAttributes = function() {
 };
 
 Yanfly.SVE.Game_Enemy_attackAnimationId =
-		Game_Enemy.prototype.attackAnimationId;
+    Game_Enemy.prototype.attackAnimationId;
 Game_Enemy.prototype.attackAnimationId = function() {
-		if (this.hasSVBattler() && !this.isHideSVWeapon()) {
-			if (this._svAttackAnimationId) return this._svAttackAnimationId;
-			this.setupSVAttributes();
-			return this._svAttackAnimationId;
-		}
+    if (this.hasSVBattler() && !this.isHideSVWeapon()) {
+      if (this._svAttackAnimationId) return this._svAttackAnimationId;
+      this.setupSVAttributes();
+      return this._svAttackAnimationId;
+    }
     return Yanfly.SVE.Game_Enemy_attackAnimationId.call(this);
 };
 
 Game_Enemy.prototype.svBattlerName = function() {
-		if (this._svBattlerName) return this._svBattlerName;
-		var array = this.enemy().sideviewBattler;
-		this._svBattlerName = Yanfly.Util.getRandomElement(array);
+    if (this._svBattlerName) return this._svBattlerName;
+    var array = this.enemy().sideviewBattler;
+    this._svBattlerName = Yanfly.Util.getRandomElement(array);
     return this._svBattlerName;
 };
 
@@ -1099,22 +1119,22 @@ Game_Enemy.prototype.hasSVBattler = function() {
 
 Game_Enemy.prototype.weaponImageId = function() {
     if (this.isHideSVWeapon()) return 0;
-		if (this._svWeaponImageId) return this._svWeaponImageId;
-		this.setupSVAttributes();
+    if (this._svWeaponImageId) return this._svWeaponImageId;
+    this.setupSVAttributes();
     return this._svWeaponImageId;
 };
 
 Game_Enemy.prototype.attackMotion = function() {
     if (this.weaponImageId() === 0) return this.enemy().sideviewAttackMotion;
-		if (this._svAttackMotion) return this._svAttackMotion;
-		this.setupSVAttributes();
+    if (this._svAttackMotion) return this._svAttackMotion;
+    this.setupSVAttributes();
     return this._svAttackMotion;
 };
 
 Game_Enemy.prototype.idleMotion = function() {
-		if (this._svIdleMotion) return this._svIdleMotion;
-		var array = this.enemy().sideviewIdleMotion;
-		this._svIdleMotion = Yanfly.Util.getRandomElement(array);
+    if (this._svIdleMotion) return this._svIdleMotion;
+    var array = this.enemy().sideviewIdleMotion;
+    this._svIdleMotion = Yanfly.Util.getRandomElement(array);
     return this._svIdleMotion;
 };
 
@@ -1309,8 +1329,8 @@ Yanfly.SVE.Game_Enemy_transform = Game_Enemy.prototype.transform;
 Game_Enemy.prototype.transform = function(enemyId) {
     this.clearSVAttributes();
     Yanfly.SVE.Game_Enemy_transform.call(this, enemyId);
-    this.battler().setBattler(this);
     this.battler().setTransform(this);
+    this.battler().setBattler(this);
 };
 
 //=============================================================================
@@ -1331,6 +1351,7 @@ Game_Party.prototype.requestMotionRefresh = function() {
 Yanfly.SVE.Sprite_Enemy_initMembers = Sprite_Enemy.prototype.initMembers;
 Sprite_Enemy.prototype.initMembers = function() {
     Yanfly.SVE.Sprite_Enemy_initMembers.call(this);
+    this._battlerName = null;
     this.initSVSprites();
 };
 
@@ -1353,10 +1374,16 @@ Sprite_Enemy.prototype.setTransform = function(battler) {
     this._weaponSprite.opacity = 0;
     this._mainSprite.opacity = 0;
     this._stateSprite.opacity = 0;
-    this.createShadowSprite();
-    this.createWeaponSprite();
-    this.createMainSprite();
-    this.createStateSprite();
+    if (battler.svBattlerName()) {
+      this.createShadowSprite();
+      this.createWeaponSprite();
+      this.createMainSprite();
+      this.createStateSprite();
+      this._shadowSprite.opacity = 255;
+      this._weaponSprite.opacity = 255;
+      this._mainSprite.opacity = 255;
+      this._stateSprite.opacity = 255;
+    }
 };
 
 Sprite_Enemy.prototype.createMainSprite = function() {
@@ -1388,6 +1415,7 @@ Sprite_Enemy.prototype.createStateSprite = function() {
 Yanfly.SVE.Sprite_Enemy_setBattler = Sprite_Enemy.prototype.setBattler;
 Sprite_Enemy.prototype.setBattler = function(battler) {
     this._svBattlerEnabled = false;
+    this.initSVSprites();
     Yanfly.SVE.Sprite_Enemy_setBattler.call(this, battler);
     this.setSVBattler(battler);
 };
@@ -1426,12 +1454,12 @@ Sprite_Enemy.prototype.updateStateSprite = function() {
 };
 
 Sprite_Enemy.prototype.updateSVStateSprite = function() {
+    this._stateSprite.visible = this._enemy.enemy().sideviewStateOverlay;
     return;
     var height = this._enemy.spriteHeight() * -1;
     height -= Sprite_StateIcon._iconHeight;
     this._stateIconSprite.y = height;
     this._stateSprite.y = (this._enemy.spriteHeight() - 64) * -1;
-    this._stateSprite.visible = this._enemy.enemy().sideviewStateOverlay;
 };
 
 Sprite_Enemy.prototype.updateFloatingStateSprite = function() {
@@ -1489,9 +1517,11 @@ Sprite_Battler.prototype.addFloatingHeight = function() {
 } else { // If YEP_X_ActSeqPack2 is NOT installed
 
 Sprite_Enemy.prototype.updateStateIconHeight = function() {
+  if (!this._stateIconSprite) return;
   var height = this._battler.spriteHeight() * -1;
   height -= Sprite_StateIcon._iconHeight;
-  if (this._stateIconSprite) this._stateIconSprite.y = height;
+  height /= this.scale.y;
+  this._stateIconSprite.y = height;
 };
 
 } // Imported.YEP_X_ActSeqPack2
@@ -1516,6 +1546,7 @@ Sprite_Enemy.prototype.updateSVBitmap = function() {
       this.updateScale();
     } else if (this._svBattlerName === '') {
       this._svBattlerName = '';
+      this._svBattlerEnabled = false;
       if (this._createdDummyMainSprite) return;
       this._createdDummyMainSprite = true;
       this._mainSprite = new Sprite_Base();
@@ -1526,7 +1557,7 @@ Sprite_Enemy.prototype.updateSVBitmap = function() {
 
 Sprite_Enemy.prototype.adjustAnchor = function() {
     if (!this._mainSprite) return;
-		this._mainSprite.anchor.x = this._enemy.sideviewAnchorX();
+    this._mainSprite.anchor.x = this._enemy.sideviewAnchorX();
     this._mainSprite.anchor.y = this._enemy.sideviewAnchorY();
 };
 

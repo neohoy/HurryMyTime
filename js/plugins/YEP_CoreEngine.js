@@ -11,7 +11,7 @@ Yanfly.Core = Yanfly.Core || {};
 
 //=============================================================================
 /*:
- * @plugindesc v1.15 Needed for the majority of Yanfly Engine Scripts. Also
+ * @plugindesc v1.17 Needed for the majority of Yanfly Engine Scripts. Also
  * contains bug fixes found inherently in RPG Maker.
  * @author Yanfly Engine Plugins
  *
@@ -450,6 +450,15 @@ Yanfly.Core = Yanfly.Core || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.17:
+ * - Updated for RPG Maker MV version 1.3.0.
+ *
+ * Version 1.16:
+ * - Fixed a bug with RPG Maker MV's inherent 'drawTextEx' function. By default
+ * it calculates the text height and then resets the font settings before
+ * drawing the text, which makes the text height inconsistent if it were to
+ * match the calculated height settings.
+ *
  * Version 1.15:
  * - Window's are now set to have only widths and heights of whole numbers. No
  * longer is it possible for them to have decimal values. This is to reduce any
@@ -627,12 +636,24 @@ Bitmap.prototype.drawText = function(text, x, y, mW, l, align) {
 };
 
 //=============================================================================
+// Sprite_Animation
+//=============================================================================
+
+Yanfly.Core.Sprite_updateTransform = Sprite.prototype.updateTransform;
+Sprite.prototype.updateTransform = function() {
+  Yanfly.Core.Sprite_updateTransform.call(this);
+  this.worldTransform.tx = Math.floor(this.worldTransform.tx);
+  this.worldTransform.ty = Math.floor(this.worldTransform.ty);
+};
+
+//=============================================================================
 // ScreenSprite
 //=============================================================================
 
 Yanfly.Core.ScreenSprite_initialize = ScreenSprite.prototype.initialize;
 ScreenSprite.prototype.initialize = function() {
     Yanfly.Core.ScreenSprite_initialize.call(this);
+    if (Utils.RPGMAKER_VERSION && Utils.RPGMAKER_VERSION >= '1.3.0') return;
     this.scale.x = Graphics.boxWidth * 10;
     this.scale.y = Graphics.boxHeight * 10;
     this.anchor.x = 0.5;
@@ -1299,8 +1320,23 @@ Window_Base.prototype.lineHeight = function() {
   return Yanfly.Param.LineHeight;
 };
 
+Window_Base.prototype.drawTextEx = function(text, x, y) {
+  if (text) {
+    this.resetFontSettings();
+    var textState = { index: 0, x: x, y: y, left: x };
+    textState.text = this.convertEscapeCharacters(text);
+    textState.height = this.calcTextHeight(textState, false);
+    while (textState.index < textState.text.length) {
+      this.processCharacter(textState);
+    }
+    return textState.x - x;
+  } else {
+    return 0;
+  }
+};
+
 Window_Base.prototype.textWidthEx = function(text) {
-    return this.drawTextEx(text, 0, this.contents.height);
+    return this.drawTextEx(text, 0, this.contents.height + this.lineHeight());
 };
 
 Window_Base.prototype.standardFontFace = function() {

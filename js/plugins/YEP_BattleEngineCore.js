@@ -11,7 +11,7 @@ Yanfly.BEC = Yanfly.BEC || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.36 Have more control over the flow of the battle system
+ * @plugindesc v1.38a Have more control over the flow of the battle system
  * with this plugin and alter various aspects to your liking.
  * @author Yanfly Engine Plugins
  *
@@ -648,10 +648,25 @@ Yanfly.BEC = Yanfly.BEC || {};
  * Changelog
  * ============================================================================
  *
- * Version 1.36:
+ * Version 1.38a:
+ * - Optimization update.
+ * - Compatibility update for Selection Control v1.08.
+ * - Bug fixed for mirrored animations on enemies.
+ *
+ * Version 1.37:
+ * - Fixed a bug where if the enemy's size is too small, the enemy's name
+ * during selection will be cut off.
+ *
+ * Version 1.36d:
  * - Made an update for the battle background image snaps when there is no
  * battleback being used. This will prevent the player party and enemy troop
  * from appearing in the background snapshot when entering menus mid-battle.
+ * - 'Death Break' action sequence now only triggers upon dead status and not
+ * an 'or 0 HP' condition.
+ * - Updated Forced Action sequencing for more efficiency.
+ * - 'Action Times+' traits now work properly for DTB again.
+ * - Optimized message displaying for battle log.
+ * - Optimized z sorting algorithm for sprites.
  *
  * Verison 1.35d:
  * - Scopes that target a dead ally will automatically target the first dead
@@ -1619,8 +1634,45 @@ BattleManager.updateEvent = function() {
     return this.checkAbort();
 };
 
+BattleManager.queueForceAction = function(user, skillId, target) {
+    var param = [
+      user.isEnemy() ? 0 : 1,
+      user.isActor() ? user.actorId() : user.index(),
+      skillId,
+      target
+    ];
+    var command = {
+      code: 339,
+      indent: 0,
+      parameters: param
+    }
+    $gameTemp.forceActionQueue(command);
+    this.clearResults();
+    if (this.isTickBased()) this._phase = 'action';
+};
+
+BattleManager.addText = function(text, wait) {
+  if (!SceneManager._scene._logWindow) return;
+  wait = wait || 0;
+  SceneManager._scene._logWindow.addText(text);
+  if (wait > 0) this._actionList.push(['WAIT', [wait]]);
+};
+
+BattleManager.clearResults = function() {
+  var group = this.allBattleMembers();
+  var length = group.length;
+  for (var i = 0; i < length; ++i) {
+    var member = group[i];
+    if (member) member.clearResult();
+  }
+  this._allTargets = [];
+  this._targets = [];
+  this._target = undefined;
+};
+
 Yanfly.BEC.BattleManager_forceAction = BattleManager.forceAction;
 BattleManager.forceAction = function(battler) {
+    if (this._subject) this._subject.clearResult();
     this.createForceActionFailSafes();
     this.savePreForceActionSettings();
     Yanfly.BEC.BattleManager_forceAction.call(this, battler);
@@ -1726,7 +1778,7 @@ BattleManager.invokeAction = function(subject, target) {
   } else {
     this.invokeNormalAction(subject, target);
   }
-  subject.setLastTarget(target);
+  if (subject) subject.setLastTarget(target);
   if (!eval(Yanfly.Param.BECOptSpeed)) this._logWindow.push('popBaseLine');
 };
 
@@ -1808,11 +1860,14 @@ BattleManager.createFinishActions = function() {
 
 Yanfly.BEC.BattleManager_endAction = BattleManager.endAction;
 BattleManager.endAction = function() {
+    if (this._subject) {
+      this._subject.onAllActionsEnd();
+    }
     if (this._processingForcedAction) {
+      this._subject.removeCurrentAction();
       this._phase = this._preForcePhase;
     }
     this._processingForcedAction = false;
-    if (this._subject) this._subject.onAllActionsEnd();
     if (this.loadPreForceActionSettings()) return;
     Yanfly.BEC.BattleManager_endAction.call(this);
 };
@@ -2358,7 +2413,7 @@ BattleManager.actionClearBattleLog = function() {
 };
 
 BattleManager.actionDeathBreak = function() {
-    if (this._subject.isDead() || this._subject.hp <= 0) {
+    if (this._subject.isDead()) {
       this._targets = [];
       this._actionList = [];
       this._individualTargets = [];
@@ -2908,11 +2963,13 @@ Spriteset_Battle.prototype.update = function() {
 
 Spriteset_Battle.prototype.updateZCoordinates = function() {
     this._battleField.children.sort(this.battleFieldDepthCompare);
+    this._battleField.removeChild(this._back1Sprite);
+    this._battleField.removeChild(this._back2Sprite);
+    this._battleField.addChildAt(this._back2Sprite, 0);
+    this._battleField.addChildAt(this._back1Sprite, 0);
 };
 
 Spriteset_Battle.prototype.battleFieldDepthCompare = function(a, b) {
-    if (a.tilePosition && !b.tilePosition) return -1;
-    if (b.tilePosition && !a.tilePosition) return 1;
     var priority = BattleManager.getSpritePriority();
     if (a._battler && b._battler && priority !== 0) {
       if (priority === 1) {
@@ -2941,6 +2998,36 @@ Spriteset_Battle.prototype.isPopupPlaying = function() {
 //=============================================================================
 
 Game_Temp.prototype.clearActionSequenceSettings = function() {
+};
+
+Game_Temp.prototype.forceActionQueue = function(command) {
+  if (!this._forceActionQueue) {
+    this._forceActionQueue = JsonEx.makeDeepCopy($dataCommonEvents[1]);
+    this._forceActionQueue.list = [];
+  }
+  this._forceActionQueue.list.push(command);
+};
+
+Yanfly.BEC.Game_Temp_clearCommonEvent = Game_Temp.prototype.clearCommonEvent;
+Game_Temp.prototype.clearCommonEvent = function() {
+    this._forceActionQueue = undefined;
+    Yanfly.BEC.Game_Temp_clearCommonEvent.call(this);
+};
+
+Yanfly.BEC.Game_Temp_isCommonEventReserved =
+  Game_Temp.prototype.isCommonEventReserved;
+Game_Temp.prototype.isCommonEventReserved = function() {
+  if (this._forceActionQueue) return true;
+  return Yanfly.BEC.Game_Temp_isCommonEventReserved.call(this);
+};
+
+Yanfly.BEC.Game_Temp_reservedCommonEvent =
+  Game_Temp.prototype.reservedCommonEvent;
+Game_Temp.prototype.reservedCommonEvent = function() {
+  if (this._forceActionQueue) {
+    return this._forceActionQueue;
+  }
+  return Yanfly.BEC.Game_Temp_reservedCommonEvent.call(this);
 };
 
 //=============================================================================
@@ -3193,6 +3280,7 @@ Game_BattlerBase.prototype.paySkillCost = function(skill) {
 Yanfly.BEC.Game_Battler_useItem = Game_Battler.prototype.useItem;
 Game_Battler.prototype.useItem = function(item) {
     Yanfly.BEC.Game_Battler_useItem.call(this, item);
+    this.refresh();
     if (!$gameParty.inBattle()) return;
     this.increaseSelfTurnCount();
     this.updateStateActionStart();
@@ -3230,6 +3318,7 @@ Game_Battler.prototype.isSelected = function() {
 
 Yanfly.BEC.Game_Battler_regenerateAll = Game_Battler.prototype.regenerateAll;
 Game_Battler.prototype.regenerateAll = function() {
+    this.clearResult();
     var lifeState = this.isAlive();
     Yanfly.BEC.Game_Battler_regenerateAll.call(this);
     if (!BattleManager.timeBasedStates()) this.updateStateTurns();
@@ -3685,9 +3774,11 @@ Game_Battler.prototype.addState = function(stateId) {
 
 Game_Battler.prototype.canAddStateFreeTurn = function(stateId) {
     if (!$gameParty.inBattle()) return false;
-    if (!this.isStateAffected(stateId)) return false;
     if (BattleManager._subject !== this) return false;
     if ($dataStates[stateId].autoRemovalTiming !== 1) return false;
+    if (Imported.YEP_BuffsStatesCore) {
+      if ($dataStates[stateId].reapplyRules === 0) return false;
+    }
     return true;
 };
 
@@ -3904,6 +3995,17 @@ Game_Actor.prototype.performEscapeSuccess = function() {
 // Game_Enemy
 //=============================================================================
 
+if (!Game_Enemy.prototype.skills) {
+Game_Enemy.prototype.skills = function() {
+  var skills = []
+  for (var i = 0; i < this.enemy().actions.length; ++i) {
+    var skill = $dataSkills[this.enemy().actions[i].skillId]
+    if (skill) skills.push(skill);
+  }
+  return skills;
+}
+}; // (!Game_Enemy.prototype.skills)
+
 Game_Enemy.prototype.performActionStart = function(action) {
     Game_Battler.prototype.performActionStart.call(this, action);
     if (!$gameSystem.isSideView() || !this.spriteCanMove()) {
@@ -3923,6 +4025,14 @@ Game_Enemy.prototype.performDamage = function() {
 
 Game_Enemy.prototype.attackAnimationId = function() {
     return this.enemy().attackAnimationId;
+};
+
+Game_Enemy.prototype.attackAnimationId1 = function() {
+    return this.attackAnimationId();
+};
+
+Game_Enemy.prototype.attackAnimationId2 = function() {
+    return this.attackAnimationId();
 };
 
 Game_Enemy.prototype.reflectAnimationId = function() {
@@ -4209,6 +4319,7 @@ Window_Help.prototype.clear = function() {
 Window_Help.prototype.setBattler = function(battler) {
     this.contents.clear();
     this.clear();
+    this.resetFontSettings();
     if (!$gameParty.inBattle()) return;
     if (!battler) return;
     var action = BattleManager.inputtingAction();
@@ -4353,6 +4464,7 @@ Window_BattleActor.prototype.isClickedActor = function(actor) {
     if (!actor) return false;
     if (!actor.isSpriteVisible()) return false;
     if (!actor.isAppeared()) return false;
+    if ($gameTemp._disableMouseOverSelect) return false;
     var x = TouchInput.x;
     var y = TouchInput.y;
     var rect = new Rectangle();
@@ -4381,6 +4493,7 @@ Window_BattleActor.prototype.isMouseOverActor = function(actor) {
     if (!actor) return false;
     if (!actor.isSpriteVisible()) return false;
     if (!actor.isAppeared()) return false;
+    if ($gameTemp._disableMouseOverSelect) return false;
     var x = TouchInput._mouseOverX;
     var y = TouchInput._mouseOverY;
     var rect = new Rectangle();
@@ -4509,6 +4622,7 @@ Window_BattleEnemy.prototype.getClickedEnemy = function() {
 Window_BattleEnemy.prototype.isClickedEnemy = function(enemy) {
     if (!enemy) return false;
     if (!enemy.isSpriteVisible()) return false;
+    if ($gameTemp._disableMouseOverSelect) return false;
     var x = TouchInput.x;
     var y = TouchInput.y;
     var rect = new Rectangle();
@@ -4537,6 +4651,7 @@ Window_BattleEnemy.prototype.getMouseOverEnemy = function() {
 Window_BattleEnemy.prototype.isMouseOverEnemy = function(enemy) {
     if (!enemy) return false;
     if (!enemy.isSpriteVisible()) return false;
+    if ($gameTemp._disableMouseOverSelect) return false;
     var x = TouchInput._mouseOverX;
     var y = TouchInput._mouseOverY;
     var rect = new Rectangle();
@@ -4604,6 +4719,7 @@ Window_EnemyVisualSelect.prototype.updateWindowSize = function() {
     textWidth += this.textPadding() * 2;
     var width = Math.max(spriteWidth, textWidth) + this.standardPadding() * 2;
     var height = this._battler.spriteHeight() + this.standardPadding() * 2;
+    height = Math.max(height, this.lineHeight() + this.standardPadding() * 2);
     if (width === this.width && height === this.height) return;
     this.width = width;
     this.height = height;
@@ -4734,6 +4850,10 @@ Window_BattleStatus.prototype.processStatusRefresh = function(index) {
     this.contents.clearRect(rect.x, rect.y, rect.width, rect.height);
     this.drawItem(index);
     actor.completetStatusRefreshRequest();
+};
+
+Window_BattleStatus.prototype.update = function() {
+    Window_Selectable.prototype.update.call(this);
 };
 
 if (!Yanfly.Param.BECCurMax) {
@@ -4873,7 +4993,7 @@ Window_BattleLog.prototype.drawLineText = function(index) {
 };
 
 Window_BattleLog.prototype.textWidthEx = function(text) {
-    return this.drawTextEx(text, 0, this.contents.height);
+    return this.drawTextEx(text, 0, this.contents.height + this.lineHeight());
 };
 
 Window_BattleLog.prototype.drawCenterLine = function(index) {
@@ -4882,6 +5002,7 @@ Window_BattleLog.prototype.drawCenterLine = function(index) {
     this.contents.clearRect(rect.x, rect.y, rect.width, rect.height);
     var tw = this.textWidthEx(text);
     var wx = rect.x + (rect.width - tw) / 2;
+    this.resetFontSettings();
     this.drawTextEx(text, wx, rect.y);
 };
 
@@ -5018,8 +5139,12 @@ function(subject, targets) {
 };
 
 Window_BattleLog.prototype.showActorAtkAniMirror = function(subject, targets) {
+  if (subject.isActor()) {
     this.showNormalAnimation(targets, subject.attackAnimationId1(), true);
     this.showNormalAnimation(targets, subject.attackAnimationId2(), false);
+  } else {
+    this.showNormalAnimation(targets, subject.attackAnimationId1(), true)
+  }
 };
 
 //=============================================================================
