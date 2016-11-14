@@ -2,7 +2,7 @@
 null,
 {"id":1,"expanded":true,"name":"波斯特高中（2008）","order":2,"parentId":10,"scrollX":1182.5454545454545,"scrollY":666.5454545454546},
 {"id":2,"expanded":false,"name":"高一 (2)班","order":4,"parentId":3,"scrollX":1182.5454545454545,"scrollY":666.5454545454546},
-{"id":3,"expanded":false,"name":"教学楼①：1F","order":3,"parentId":1,"scrollX":1165.0909090909092,"scrollY":1270.909090909091},
+{"id":3,"expanded":false,"name":"教学楼①：1F","order":3,"parentId":1,"scrollX":1165.0909090909092,"scrollY":1236},
 {"id":4,"expanded":false,"name":"高一 教师办公室","order":5,"parentId":3,"scrollX":1182.5454545454545,"scrollY":666.5454545454546},
 {"id":5,"expanded":true,"name":"连廊西侧","order":8,"parentId":1,"scrollX":1330.909090909091,"scrollY":1528.3636363636365},
 {"id":6,"expanded":true,"name":"校园中广场","order":9,"parentId":1,"scrollX":1165.0909090909092,"scrollY":1602.5454545454545},
