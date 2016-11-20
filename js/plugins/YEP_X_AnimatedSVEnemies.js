@@ -11,7 +11,7 @@ Yanfly.SVE = Yanfly.SVE || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.12 (Requires YEP_BattleEngineCore.js) This plugin lets
+ * @plugindesc v1.15 (Requires YEP_BattleEngineCore.js) This plugin lets
  * you use Animated Sideview Actors for enemies!
  * @author Yanfly Engine Plugins
  *
@@ -713,6 +713,18 @@ Yanfly.SVE = Yanfly.SVE || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.15:
+ * - Updated for RPG Maker MV version 1.3.2.
+ *
+ * Version 1.14:
+ * - Pixi4 update to fix bug that caused state icons to fly off the screen.
+ * - Fixed a compatibility issue with YEP_X_VisualStateFX regarding state
+ * sprites being disabled and causing crashes.
+ *
+ * Version 1.13:
+ * - Compatibility update with YEP_X_VisualStateFX to disable State Overlays on
+ * enemies properly.
+ *
  * Version 1.12:
  * - Fixed a bug that caused the <Sideview Show State Overlay> and 
  * <Sideview Hide State Overlay> notetags to not work.
@@ -1409,6 +1421,9 @@ Sprite_Enemy.prototype.createWeaponSprite = function() {
 };
 
 Sprite_Enemy.prototype.createStateSprite = function() {
+    if (Imported.YEP_X_VisualStateFX) {
+      if (!Yanfly.Param.VSFXEnemyOver) return;
+    }
     Sprite_Actor.prototype.createStateSprite.call(this);
 };
 
@@ -1431,7 +1446,7 @@ Sprite_Enemy.prototype.setSVBattler = function(battler) {
     this._adjustMainBitmapSettings = false;
     this._actor = this._enemy;
     this._svBattlerEnabled = true;
-    this._stateSprite.setup(battler);
+    if (this._stateSprite) this._stateSprite.setup(battler);
 };
 
 Yanfly.SVE.Sprite_Enemy_update = Sprite_Enemy.prototype.update;
@@ -1454,6 +1469,7 @@ Sprite_Enemy.prototype.updateStateSprite = function() {
 };
 
 Sprite_Enemy.prototype.updateSVStateSprite = function() {
+    if (!this._stateSprite) return;
     this._stateSprite.visible = this._enemy.enemy().sideviewStateOverlay;
     return;
     var height = this._enemy.spriteHeight() * -1;
@@ -1564,6 +1580,12 @@ Sprite_Enemy.prototype.adjustAnchor = function() {
 Sprite_Enemy.prototype.updateScale = function() {
     this.scale.x = this._enemy.spriteScaleX();
     this.scale.y = this._enemy.spriteScaleY();
+    if (this._stateIconSprite) {
+      var safe = 1 / 100000;
+      var sprite = this._stateIconSprite;
+      sprite.scale.x = 1 / Math.max(safe, Math.abs(this.scale.x));
+      sprite.scale.y = 1 / Math.max(safe, Math.abs(this.scale.y));
+    }
 };
 
 Yanfly.SVE.Sprite_Enemy_updateFrame = Sprite_Enemy.prototype.updateFrame;
@@ -1587,7 +1609,7 @@ Sprite_Enemy.prototype.updateSVFrame = function() {
     if (this._effectType === 'bossCollapse') {
       cdh = ch - this._effectDuration;
     }
-    this.setFrame(cx * cw, cy * ch, cw, ch);
+    // this.setFrame(cx * cw, cy * ch, cw, ch);
     this._mainSprite.setFrame(cx * cw, cy * ch, cw, ch - cdh);
     this.adjustMainBitmapSettings(bitmap);
     this.adjustSVShadowSettings();
@@ -1760,18 +1782,6 @@ Yanfly.SVE.Sprite_Enemy_updateInstantCollapse =
 Sprite_Enemy.prototype.updateInstantCollapse = function() {
     if (!this.isSideviewCollapse()) return;
     Yanfly.SVE.Sprite_Enemy_updateInstantCollapse.call(this);
-};
-
-//=============================================================================
-// Sprite_StateIcon
-//=============================================================================
-
-Yanfly.SVE.Sprite_StateIcon_updateMirror =
-    Sprite_StateIcon.prototype.updateMirror;
-Sprite_StateIcon.prototype.updateMirror = function() {
-    this.scale.x = 1 / Math.max(1 / 10000, Math.abs(this.parent.scale.x));
-    this.scale.y = 1 / Math.max(1 / 10000, Math.abs(this.parent.scale.y));
-    Yanfly.SVE.Sprite_StateIcon_updateMirror.call(this);
 };
 
 //=============================================================================

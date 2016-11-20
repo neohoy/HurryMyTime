@@ -11,7 +11,7 @@ Yanfly.CBE = Yanfly.CBE || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.01 (Requires YEP_BattleEngineCore & YEP_EquipCore)
+ * @plugindesc v1.01a (Requires YEP_BattleEngineCore & YEP_EquipCore)
  * Allow your actors to change equipment mid-battle.
  * @author Yanfly Engine Plugins
  *
@@ -61,6 +61,7 @@ Yanfly.CBE = Yanfly.CBE || {};
  *
  * Version 1.01:
  * - Fixed a bug that made <Disable Change Battle Equip> not work.
+ * - Optimization update.
  *
  * Version 1.00:
  * - Finished Plugin!
@@ -124,6 +125,8 @@ Yanfly.CBE.BattleManager_startBattle = BattleManager.startBattle;
 BattleManager.startBattle = function() {
     if (!$gameTemp._cbeBattle) {
       Yanfly.CBE.BattleManager_startBattle.call(this);
+    } else {
+      this.refreshAllMembers();
     }
     $gameTemp._cbeBattle = false;
     this._bypassMoveToStartLocation = false;
@@ -351,7 +354,9 @@ Scene_Equip.prototype.createCommandWindow = function() {
     if (!$gameTemp._cbeBattle) return;
     this._commandWindow.removeHandler('pagedown');
     this._commandWindow.removeHandler('pageup');
-    if (DataManager.isBattleTest()) this.addDebugEquipment();
+    if (DataManager.isBattleTest() && !$gameTemp._bypassAddDebugEquipment) {
+      this.addDebugEquipment();
+    }
 };
 
 Scene_Equip.prototype.addDebugEquipment = function() {

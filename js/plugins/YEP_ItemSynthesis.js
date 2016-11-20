@@ -8,10 +8,11 @@ Imported.YEP_ItemSynthesis = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.IS = Yanfly.IS || {};
+Yanfly.IS.version = 1.07
 
 //=============================================================================
  /*:
- * @plugindesc v1.06 Players can now craft their own items in-game
+ * @plugindesc v1.07 Players can now craft their own items in-game
  * through an item synthesis system.
  * @author Yanfly Engine Plugins
  *
@@ -225,6 +226,30 @@ Yanfly.IS = Yanfly.IS || {};
  *   such as "Strange Liquid" or "Weird Crystal".
  *
  * ============================================================================
+ * Lunatic Mode - Custom Synthesis Effects
+ * ============================================================================
+ *
+ * For those with a JavaScript experience, you can use these notetags to make
+ * a custom effect that will occur when a specific item is synthesized. For
+ * example, when a Potion is made, you can give the player an empty bottle as a
+ * side product of the synthesis.
+ *
+ * ---
+ *
+ * Item, Weapon, and Armor Notetags:
+ * 
+ *   <Custom Synthesis Effect>
+ *    var bottle = $dataItems[123];
+ *    $gameParty.gainItem(bottle, 2);
+ *   </Custom Synthesis Effect>
+ *
+ *   For this notetag, the 'item' variable will refer to the item being
+ *   synthesized. Changing it will do nothing but it will be used as a
+ *   convenience variable to refer to it.
+ *
+ * ---
+ *
+ * ============================================================================
  * Plugin Commands
  * ============================================================================
  *
@@ -253,6 +278,9 @@ Yanfly.IS = Yanfly.IS || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.07:
+ * - Added <Custom Synthesis Effect> Lunatic Mode notetag.
  *
  * Version 1.06:
  * - Fixed an error with the calculation of total recipes.
@@ -384,6 +412,8 @@ DataManager.processISNotetags1 = function(group, type) {
   var note7 = /<(?:SYNTHESIS INGREDIENTS)>/i;
   var note8 = /<\/(?:SYNTHESIS INGREDIENTS)>/i;
   var note9 = /<(?:MASK NAME):[ ](.*)>/i;
+  var note10a = /<(?:CUSTOM SYNTHESIS EFFECT)>/i;
+  var note10b = /<\/(?:CUSTOM SYNTHESIS EFFECT)>/i;
   for (var n = 1; n < group.length; n++) {
     var obj = group[n];
     var notedata = obj.note.split(/[\r\n]+/);
@@ -400,6 +430,8 @@ DataManager.processISNotetags1 = function(group, type) {
     obj.synthSeVol = Yanfly.Param.ISDefVol;
     obj.synthSePitch = Yanfly.Param.ISDefPitch;
     obj.synthSePan = Yanfly.Param.ISDefPan;
+    obj.customSynthEval = '';
+    var evalMode = 'none';
 
     for (var i = 0; i < notedata.length; i++) {
       var line = notedata[i];
@@ -440,6 +472,12 @@ DataManager.processISNotetags1 = function(group, type) {
         obj.synthSePitch = parseInt(RegExp.$1);
       } else if (line.match(/<(?:SYNTHESIS PAN):[ ](\d+)>/i)) {
         obj.synthSePan = parseInt(RegExp.$1);
+      } else if (line.match(note10a)) {
+        evalMode = 'custom synthesis effect';
+      } else if (line.match(note10b)) {
+        evalMode = 'none';
+      } else if (evalMode === 'custom synthesis effect') {
+        obj.customSynthEval += line + '\n';
       }
     }
     this.processRecipeCounts(obj);
@@ -1591,7 +1629,9 @@ Scene_Synthesis.prototype.onListOk = function() {
 
 Scene_Synthesis.prototype.onNumberOk = function() {
     this.playSynthesisSound();
-    this.doBuy(this._numberWindow.number());
+    var number = this._numberWindow.number();
+    this.doBuy(number);
+    this.customSynthEffect(number);
     this.endNumberInput();
     this.refreshWindows();
 };
@@ -1618,6 +1658,17 @@ Scene_Synthesis.prototype.doBuy = function(number) {
     }
     $gameParty.gainItem(this._item, number);
     $gameSystem.addSynth(this._item);
+};
+
+Scene_Synthesis.prototype.customSynthEffect = function(number) {
+  if (!this._item.customSynthEval) return;
+  if (this._item.customSynthEval <= 0) return;
+  var item = this._item;
+  var s = $gameSwitches._data;
+  var v = $gameVariables._data;
+  while (number--) {
+    eval(this._item.customSynthEval);
+  }
 };
 
 Scene_Synthesis.prototype.endNumberInput = function() {

@@ -1,5 +1,5 @@
 //=============================================================================
-// Yanfly Engine Plugins - Skill Learn
+// Yanfly Engine Plugins - Skill Learn System
 // YEP_SkillLearnSystem.js
 //=============================================================================
 
@@ -11,7 +11,7 @@ Yanfly.SLS = Yanfly.SLS || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.10 Allows actors to learn skills from the skill menu
+ * @plugindesc v1.12 Allows actors to learn skills from the skill menu
  * through crafting them via items or otherwise.
  * @author Yanfly Engine Plugins
  *
@@ -243,6 +243,12 @@ Yanfly.SLS = Yanfly.SLS || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.12:
+ * NEW - Updated for RPG Maker MV version 1.3.2.
+ *
+ * Version 1.11:
+ * - Removed dependency on YEP_JobPoints.js if using Integrated skill learn.
  *
  * Version 1.10:
  * - Added <Custom Learn JP Cost> Lunatic Mode notetag. Look in the plugin's
@@ -590,6 +596,10 @@ Game_Actor.prototype.sufficientJpLearnSkill = function(skill, classId) {
   return false;
 };
 
+Game_Actor.prototype.isLearnedSkillRaw = function(skillId) {
+  return this._skills.contains(skillId);
+};
+
 Game_Actor.prototype.canLearnSkill = function(skill, classId) {
     if (!skill) return false;
     if (skill.learnCostGold > $gameParty.gold()) return false;
@@ -867,7 +877,7 @@ Window_SkillLearn.prototype.meetsRequirements = function(skill) {
     for (var i = 0; i < skill.learnRequireSkill.length; ++i) {
       var skillId = skill.learnRequireSkill[i];
       if (!$dataSkills[skillId]) continue;
-      if (!this._actor.isLearnedSkill(skillId)) return false;
+      if (!this._actor.isLearnedSkillRaw(skillId)) return false;
     }
     for (var i = 0; i < skill.learnRequireSwitch.length; ++i) {
       var switchId = skill.learnRequireSwitch[i];
@@ -879,7 +889,7 @@ Window_SkillLearn.prototype.meetsRequirements = function(skill) {
 Window_SkillLearn.prototype.isEnabled = function(item) {
     if (!this._actor) return false;
     if (!item) return false;
-    if (this._actor.isLearnedSkill(item.id)) return false;
+    if (this._actor.isLearnedSkillRaw(item.id)) return false;
     if ($gamePlayer.isDebugThrough()) return true;
     if (!this._actor.canLearnSkill(item, this._classId)) return false;
     if (!this.meetsRequirements(item)) return false;
@@ -912,7 +922,7 @@ Window_SkillLearn.prototype.drawItem = function(index) {
 };
 
 Window_SkillLearn.prototype.drawItemLearned = function(skill, wx, wy, ww) {
-    if (!this._actor.isLearnedSkill(skill.id)) {
+    if (!this._actor.isLearnedSkillRaw(skill.id)) {
       this.drawSkillCost(skill, wx, wy, ww);
       return;
     }
@@ -981,13 +991,16 @@ Window_SkillLearnClass.prototype.isEnabled = function(classId) {
     if (!this._skill) return false;
     var item = $dataClasses[classId];
     if (!item) return false;
-    var jpCost = this._skill.learnCostJp;
-    jpCost += this._actor.this._actor.customLearnSkillJpCost(this._skill);
-    if (jpCost > this._actor.jp(item.id)) return false;
+    if (Imported.YEP_JobPoints) {
+      var jpCost = this._skill.learnCostJp;
+      jpCost += this._actor.customLearnSkillJpCost(this._skill);
+      if (jpCost > this._actor.jp(item.id)) return false;
+    }
     return Window_ClassList.prototype.isEnabled.call(this, classId);
 };
 
 Window_SkillLearnClass.prototype.drawClassLevel = function(item, wx, wy, ww) {
+    if (!Imported.YEP_JobPoints) return;
     var value = Yanfly.Util.toGroup(this._actor.jp(item.id));
     var icon = '\\i[' + Yanfly.Icon.Jp + ']';
     var fmt = Yanfly.Param.JpMenuFormat;
@@ -1451,7 +1464,6 @@ Scene_Skill.prototype.createGoldWindow = function() {
 
 Scene_Skill.prototype.createSkillLearnClassWindow = function() {
     if (!Imported.YEP_ClassChangeCore) return;
-    if (!Imported.YEP_JobPoints) return;
     if (this._skillLearnClassWindow) return;
     var wx = 0;
     var wy = this._statusWindow.y + this._statusWindow.height;

@@ -8,10 +8,11 @@ Imported.YEP_ItemCore = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.Item = Yanfly.Item || {};
+Yanfly.Item.version = 1.25;
 
 //=============================================================================
  /*:
- * @plugindesc v1.24 Changes the way Items are handled for your game
+ * @plugindesc v1.25 Changes the way Items are handled for your game
  * and the Item Scene, too.
  * @author Yanfly Engine Plugins
  *
@@ -41,7 +42,7 @@ Yanfly.Item = Yanfly.Item || {};
  * @param Random Variance
  * @desc Randomize the stats found for non shop items by this value
  * either positive or negative. Set as 0 for no random.
- * @default 5
+ * @default 0
  *
  * @param Negative Variance
  * @desc If using random variance, allow random variance equipment
@@ -335,9 +336,13 @@ Yanfly.Item = Yanfly.Item || {};
  * Changelog
  * ============================================================================
  *
- * Version 1.24:
+ * Version 1.25:
+ * - Optimization Update
+ *
+ * Version 1.24a:
  * - Fixed a typo within the code. Please update Item Core, Item Disassemble,
  * Attachable Augments, and More Currencies if you are using those plugins.
+ * - Random variance is now disabled from fresh plugin installation by default.
  *
  * Version 1.23:
  * - Fixed an issue custom info text when using different font sizes.
@@ -1203,6 +1208,19 @@ Game_Party.prototype.numIndependentItems = function(baseItem) {
       if (item.baseItemId && item.baseItemId === id) value += 1;
     }
     return value;
+};
+
+Game_Party.prototype.clearAllMatchingBaseItems = function(baseItem, equipped) {
+  if (!Imported.YEP_ItemCore) return;
+  for (;;) {
+    var item = this.getMatchingBaseItem(baseItem, equipped);
+    if (item) {
+      this.removeIndependentItem(item, equipped);
+      DataManager.removeIndependentItem(item);
+    } else {
+      break;
+    }
+  }
 };
 
 //=============================================================================

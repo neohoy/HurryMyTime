@@ -11,7 +11,7 @@ Yanfly.VHG = Yanfly.VHG || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.05 (Requires YEP_BattleEngineCore.js) Reveal HP Gauges
+ * @plugindesc v1.06 (Requires YEP_BattleEngineCore.js) Reveal HP Gauges
  * when a battler is selected or takes damage in battle.
  * @author Yanfly Engine Plugins
  *
@@ -142,6 +142,9 @@ Yanfly.VHG = Yanfly.VHG || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.06:
+ * - Compatibility update with State Categories.
  *
  * Version 1.05:
  * - Updated for RPG Maker MV version 1.1.0.
@@ -277,6 +280,20 @@ Game_System.prototype.addHpGaugeEnemy = function(id) {
 };
 
 //=============================================================================
+// Game_BattlerBase
+//=============================================================================
+
+Yanfly.VHG.Game_BattlerBase_die = Game_BattlerBase.prototype.die;
+Game_BattlerBase.prototype.die = function() {
+  Yanfly.VHG.Game_BattlerBase_die.call(this);
+  if (!this.isEnemy()) return;
+  if (eval(Yanfly.Param.VHGDefeatFirst)) {
+    if (!$gameSystem.showHpGaugeEnemy(this._enemyId)) this._noHpGauge = true;
+  }
+  $gameSystem.addHpGaugeEnemy(this._enemyId);
+};
+
+//=============================================================================
 // Game_Battler
 //=============================================================================
 
@@ -356,15 +373,6 @@ Game_Enemy.prototype.hpGaugeVisible = function() {
 		if (this.enemy().showHpGauge) return true;
 		if (!$gameSystem.showHpGaugeEnemy(this._enemyId)) return false;
 		return Game_Battler.prototype.hpGaugeVisible.call(this);
-};
-
-Yanfly.VHG.Game_Enemy_die = Game_Enemy.prototype.die;
-Game_Enemy.prototype.die = function() {
-    Yanfly.VHG.Game_Enemy_die.call(this);
-		if (eval(Yanfly.Param.VHGDefeatFirst)) {
-			if (!$gameSystem.showHpGaugeEnemy(this._enemyId)) this._noHpGauge = true;
-		}
-		$gameSystem.addHpGaugeEnemy(this._enemyId);
 };
 
 Yanfly.VHG.Game_Enemy_revive = Game_Enemy.prototype.revive;

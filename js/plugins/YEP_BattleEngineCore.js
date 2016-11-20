@@ -8,10 +8,11 @@ Imported.YEP_BattleEngineCore = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.BEC = Yanfly.BEC || {};
+Yanfly.BEC.version = 1.41;
 
 //=============================================================================
  /*:
- * @plugindesc v1.38a Have more control over the flow of the battle system
+ * @plugindesc v1.41 Have more control over the flow of the battle system
  * with this plugin and alter various aspects to your liking.
  * @author Yanfly Engine Plugins
  *
@@ -647,6 +648,19 @@ Yanfly.BEC = Yanfly.BEC || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.41:
+ * - Fixed a bug that allowed certain sprites to remain in the active pool
+ * while party members were removed midway through battle.
+ *
+ * Version 1.40:
+ * - Updated for RPG Maker MV version 1.3.2.
+ *
+ * Version 1.39c:
+ * - Fixed a bug that caused dead actors to not be a part of action sequence
+ * targeting for "Not Focus".
+ * - Optimization update.
+ * - Updated "queueForceAction" to utilize both numbers and actual targets.
  *
  * Version 1.38a:
  * - Optimization update.
@@ -1518,6 +1532,7 @@ BattleManager.processEscape = function() {
     $gameParty.performEscape();
     SoundManager.playEscape();
     var success = this._preemptive ? true : (Math.random() < this._escapeRatio);
+    if ($gamePlayer.isDebugThrough()) success = true;
     if (success) {
         $gameParty.performEscapeSuccess();
         this.displayEscapeSuccessMessage();
@@ -1536,6 +1551,11 @@ Yanfly.BEC.BattleManager_processAbort = BattleManager.processAbort;
 BattleManager.processAbort = function() {
     $gameParty.removeBattleStates();
     Yanfly.BEC.BattleManager_processAbort.call(this);
+};
+
+BattleManager.refreshAllMembers = function() {
+  $gameParty.refreshMembers();
+  $gameTroop.refreshMembers();
 };
 
 BattleManager.startTurn = function() {
@@ -1563,6 +1583,7 @@ BattleManager.endTurn = function() {
     }
     this._enteredEndPhase = true;
     Yanfly.BEC.BattleManager_endTurn.call(this);
+    BattleManager.refreshAllMembers();
 };
 
 BattleManager.getNextSubject = function() {
@@ -1635,11 +1656,18 @@ BattleManager.updateEvent = function() {
 };
 
 BattleManager.queueForceAction = function(user, skillId, target) {
+    if (target === undefined) {
+      var targetIndex = 0;
+    } else if (typeof target === 'number') {
+      var targetIndex = target;
+    } else {
+      var targetIndex = target.index();
+    }
     var param = [
       user.isEnemy() ? 0 : 1,
       user.isActor() ? user.actorId() : user.index(),
       skillId,
-      target
+      targetIndex
     ];
     var command = {
       code: 339,
@@ -1655,7 +1683,10 @@ BattleManager.addText = function(text, wait) {
   if (!SceneManager._scene._logWindow) return;
   wait = wait || 0;
   SceneManager._scene._logWindow.addText(text);
-  if (wait > 0) this._actionList.push(['WAIT', [wait]]);
+  if (wait <= 0) return;
+  var last = this._actionList[this._actionList.length - 1];
+  if (last && last[0] === 'WAIT') return;
+  this._actionList.push(['WAIT', [wait]]);
 };
 
 BattleManager.clearResults = function() {
@@ -1787,7 +1818,7 @@ BattleManager.invokeCounterAttack = function(subject, target) {
     this._logWindow.displayCounter(target);
     action.setAttack();
     action.apply(subject);
-    this._logWindow.displayActionResults(subject, subject);
+    this._logWindow.displayActionResults(target, subject);
     if (subject.isDead()) subject.performCollapse();
 };
 
@@ -2271,6 +2302,8 @@ BattleManager.makeActionTargets = function(string) {
               } else {
                 continue;
               }
+            } else if (target.isActor()) {
+              // Ignore
             } else {
               continue;
             }
@@ -2899,7 +2932,8 @@ Sprite_Damage.prototype.initialize = function() {
 };
 
 Sprite_Damage.prototype.setup = function(target) {
-    var result = target.shiftDamagePopup();
+    this._result = target.shiftDamagePopup();
+    var result = this._result;
     if (result.missed || result.evaded) {
       this.createMiss();
     } else if (result.hpAffected) {
@@ -2991,6 +3025,21 @@ Spriteset_Battle.prototype.isPopupPlaying = function() {
     return this.battlerSprites().some(function(sprite) {
         return sprite.isPopupPlaying();
     });
+};
+
+Yanfly.BEC.Spriteset_Battle_battlerSprites =
+  Spriteset_Battle.prototype.battlerSprites;
+Spriteset_Battle.prototype.battlerSprites = function() {
+  var sprites = Yanfly.BEC.Spriteset_Battle_battlerSprites.call(this);
+  var length = sprites.length;
+  var result = [];
+  for (var i = 0; i < length; ++i) {
+    var sprite = sprites[i];
+    if (!sprite) continue;
+    if (!sprite._battler) continue;
+    result.push(sprite);
+  }
+  return result;
 };
 
 //=============================================================================
@@ -4080,7 +4129,10 @@ Game_Unit.prototype.onTurnStart = function() {
     var max = this.members().length;
     for (var i = 0; i < max; ++i) {
       var member = this.members()[i];
-      if (member) member.onTurnStart();
+      if (member) {
+        member.onTurnStart();
+        member.refresh();
+      }
     }
 };
 
@@ -4089,6 +4141,15 @@ Game_Unit.prototype.updateTick = function() {
     for (var i = 0; i < max; ++i) {
       var member = this.members()[i];
       if (member) member.updateTick();
+    }
+};
+
+Game_Unit.prototype.refreshMembers = function() {
+    var group = this.allMembers();
+    var length = group.length;
+    for (var i = 0; i < length; ++i) {
+      var member = group[i];
+      if (member) member.refresh();
     }
 };
 
@@ -4101,6 +4162,14 @@ Game_Party.prototype.performEscapeSuccess = function() {
       var member = this.members()[i];
       if (member) member.performEscapeSuccess();
     }
+};
+
+//=============================================================================
+// Game_Troop
+//=============================================================================
+
+Game_Troop.prototype.allMembers = function() {
+  return this.members();
 };
 
 //=============================================================================

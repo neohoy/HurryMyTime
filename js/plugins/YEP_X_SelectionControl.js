@@ -11,7 +11,7 @@ Yanfly.Sel = Yanfly.Sel || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.08 (Requires YEP_BattleEngineCore & YEP_TargetCore.js)
+ * @plugindesc v1.09 (Requires YEP_BattleEngineCore & YEP_TargetCore.js)
  * Control what targets can and can't be selected for actions.
  * @author Yanfly Engine Plugins
  *
@@ -380,6 +380,9 @@ Yanfly.Sel = Yanfly.Sel || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.09:
+ * - Fixed an exploit with skills that gain TP across Disperse Damage.
  *
  * Version 1.08:
  * - New Feature: Clicking upon the Party Status Window to select actors works.
@@ -843,6 +846,14 @@ Game_Battler.prototype.isWeaponRanged = function() {
   return false;
 };
 
+Yanfly.Sel.Game_Battler_gainSilentTp = Game_Battler.prototype.gainSilentTp;
+Game_Battler.prototype.gainSilentTp = function(value) {
+    if ($gameTemp._selectedDmgMod !== undefined) {
+      value = Math.floor(value * $gameTemp._selectedDmgMod);
+    }
+    Yanfly.Sel.Game_Battler_gainSilentTp.call(this, value);
+};
+
 //=============================================================================
 // Game_Actor
 //=============================================================================
@@ -1117,6 +1128,14 @@ Game_Action.prototype.makeTargets = function() {
     } else {
       return targets;
     }
+};
+
+Yanfly.Sel.Game_Action_applyItemUserEffect =
+  Game_Action.prototype.applyItemUserEffect;
+Game_Action.prototype.applyItemUserEffect = function(target) {
+    $gameTemp._selectedDmgMod = this._selectedDmgMod || 1;
+    Yanfly.Sel.Game_Action_applyItemUserEffect.call(this, target);
+    $gameTemp._selectedDmgMod = undefined;
 };
 
 Game_Action.prototype.fallbackFilter = function() {

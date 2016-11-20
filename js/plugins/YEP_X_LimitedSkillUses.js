@@ -11,7 +11,7 @@ Yanfly.LSU = Yanfly.LSU || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.02 (Requires YEP_SkillCore.js) Make certain skills have
+ * @plugindesc v1.03 (Requires YEP_SkillCore.js) Make certain skills have
  * a limited amount of times they can be used in battle.
  * @author Yanfly Engine Plugins
  *
@@ -272,6 +272,9 @@ Yanfly.LSU = Yanfly.LSU || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.03:
+ * - Compatibility update with Equip Battle Skills and Equip Skill Tiers.
  *
  * Version 1.02a:
  * - Updated for RPG Maker MV version 1.1.0.
@@ -542,8 +545,8 @@ DataManager.processLSUNotetags3 = function(group) {
 
 Yanfly.LSU.BattleManager_endBattle = BattleManager.endBattle;
 BattleManager.endBattle = function(result) {
-    $gameParty.recoverLimitedSkillUses(result);
     Yanfly.LSU.BattleManager_endBattle.call(this, result);
+    $gameParty.recoverLimitedSkillUses(result);
 };
 
 //=============================================================================
@@ -824,11 +827,14 @@ Game_Action.prototype.applyItemUserEffect = function(target) {
 //=============================================================================
 
 Game_Party.prototype.recoverLimitedSkillUses = function(result) {
+    var condition = this._inBattle;
+    this._inBattle = false;
     var length = this.allMembers().length;
     for (var i = 0; i < length; ++i) {
       var member = this.allMembers()[i];
       if (member) member.recoverLimitedSkillUsesBattle(result);
     }
+    this._inBattle = condition;
 };
 
 //=============================================================================

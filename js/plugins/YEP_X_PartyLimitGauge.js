@@ -8,10 +8,11 @@ Imported.YEP_X_PartyLimitGauge = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.PLG = Yanfly.PLG || {};
+Yanfly.PLG.version = 1.08;
 
 //=============================================================================
  /*:
- * @plugindesc v1.07 (Requires YEP_SkillCore.js) A party-wide skill
+ * @plugindesc v1.08 (Requires YEP_SkillCore.js) A party-wide skill
  * resource is accessible across all members of a unit.
  * @author Yanfly Engine Plugins
  *
@@ -487,6 +488,12 @@ Yanfly.PLG = Yanfly.PLG || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.08:
+ * - Calculations for Party Limit Gauge increasing for HP and MP values are now
+ * calculated based on the actual HP and MP damage taken as per the results
+ * rather than based off of the raw incoming value (in the event that raw value
+ * gets modified as per the effects of other plugins).
+ *
  * Version 1.07:
  * - Fixed a bug that didn't apply the 'Party Max Bonus' parameter properly.
  *
@@ -947,32 +954,34 @@ Game_Enemy.prototype.partyLimitCostRate = function() {
 
 Yanfly.PLG.Game_Action_executeHpDamage = Game_Action.prototype.executeHpDamage;
 Game_Action.prototype.executeHpDamage = function(target, value) {
+    Yanfly.PLG.Game_Action_executeHpDamage.call(this, target, value);
     var user = this.subject();
-    if (value > 0) {
+    var dmg = target.result().hpDamage;
+    if (dmg > 0) {
       target.friendsUnit().processPartyLimitGaugeEval(Yanfly.Param.PLGTakeHpDmg,
-        user, target, this.item(), value);
+        user, target, this.item(), dmg);
       user.friendsUnit().processPartyLimitGaugeEval(Yanfly.Param.PLGDealHpDmg,
-        user, target, this.item(), value);
+        user, target, this.item(), dmg);
     } else {
       target.friendsUnit().processPartyLimitGaugeEval(Yanfly.Param.PLGHealHpDmg,
-        user, target, this.item(), value);
+        user, target, this.item(), dmg);
     }
-    Yanfly.PLG.Game_Action_executeHpDamage.call(this, target, value);
 };
 
 Yanfly.PLG.Game_Action_executeMpDamage = Game_Action.prototype.executeMpDamage;
 Game_Action.prototype.executeMpDamage = function(target, value) {
+    Yanfly.PLG.Game_Action_executeMpDamage.call(this, target, value);
     var user = this.subject();
-    if (value > 0) {
+    var dmg = target.result().mpDamage;
+    if (dmg > 0) {
       target.friendsUnit().processPartyLimitGaugeEval(Yanfly.Param.PLGTakeMpDmg,
-        user, target, this.item(), value);
+        user, target, this.item(), dmg);
       user.friendsUnit().processPartyLimitGaugeEval(Yanfly.Param.PLGDealMpDmg,
-        user, target, this.item(), value);
+        user, target, this.item(), dmg);
     } else {
       target.friendsUnit().processPartyLimitGaugeEval(Yanfly.Param.PLGHealMpDmg,
-        user, target, this.item(), value);
+        user, target, this.item(), dmg);
     }
-    Yanfly.PLG.Game_Action_executeMpDamage.call(this, target, value);
 };
 
 Yanfly.PLG.Game_Action_applyItemUserEffect =

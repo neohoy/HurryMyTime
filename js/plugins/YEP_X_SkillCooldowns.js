@@ -11,7 +11,7 @@ Yanfly.SCD = Yanfly.SCD || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.09 (Requires YEP_SkillCore.js) Cooldowns can be applied
+ * @plugindesc v1.10 (Requires YEP_SkillCore.js) Cooldowns can be applied
  * to skills to prevent them from being used continuously.
  * @author Yanfly Engine Plugins
  *
@@ -152,6 +152,11 @@ Yanfly.SCD = Yanfly.SCD || {};
  *   Sets the cooldown for the skill to X turns. This cooldown only affects
  *   this skill alone. This value will take priority over Skill Type Cooldowns
  *   and Global Cooldowns.
+ *
+ *   <Warmup: x>
+ *   Sets the warmup for the skill to X turns. When entering a new battle, the
+ *   skill will be on a warmup phase and cannot be used until the warmup phase
+ *   is over.
  *
  *   <After Battle Cooldown: +x>
  *   <After Battle Cooldown: -x>
@@ -357,6 +362,10 @@ Yanfly.SCD = Yanfly.SCD || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.10:
+ * - Compatibility update with Equip Battle Skills.
+ * - Documentation update. Added help information for <warmup: x>.
  *
  * Version 1.09:
  * - Fixed a bug with the <Skill x Cooldown Rate: y%>,
@@ -690,8 +699,8 @@ BattleManager.actionGlobalCooldown = function(actionArgs) {
       var value = parseInt(RegExp.$1);
       for (var t = 0; t < targets.length; ++t) {
         var target = targets[t];
-        for (var i = 0; i < target.skills().length; ++i) {
-          var skill = target.skills()[i];
+        for (var i = 0; i < target.allSkills().length; ++i) {
+          var skill = target.allSkills()[i];
           if (skill) {
             target.addCooldown(skill.id, value);
           }
@@ -701,8 +710,8 @@ BattleManager.actionGlobalCooldown = function(actionArgs) {
       var value = parseInt(RegExp.$1);
       for (var t = 0; t < targets.length; ++t) {
         var target = targets[t];
-        for (var i = 0; i < target.skills().length; ++i) {
-          var skill = target.skills()[i];
+        for (var i = 0; i < target.allSkills().length; ++i) {
+          var skill = target.allSkills()[i];
           if (skill) {
             target.setCooldown(skill.id, value);
           }
@@ -744,8 +753,8 @@ BattleManager.actionSTypeCooldown = function(stypeId, actionArgs) {
       var value = parseInt(RegExp.$1);
       for (var t = 0; t < targets.length; ++t) {
         var target = targets[t];
-        for (var i = 0; i < target.skills().length; ++i) {
-          var skill = target.skills()[i];
+        for (var i = 0; i < target.allSkills().length; ++i) {
+          var skill = target.allSkills()[i];
           if (skill && skill.stypeId === stypeId) {
             target.addCooldown(skill.id, value);
           }
@@ -755,8 +764,8 @@ BattleManager.actionSTypeCooldown = function(stypeId, actionArgs) {
       var value = parseInt(RegExp.$1);
       for (var t = 0; t < targets.length; ++t) {
         var target = targets[t];
-        for (var i = 0; i < target.skills().length; ++i) {
-          var skill = target.skills()[i];
+        for (var i = 0; i < target.allSkills().length; ++i) {
+          var skill = target.allSkills()[i];
           if (skill && skill.stypeId === stypeId) {
             target.setCooldown(skill.id, value);
           }
@@ -828,8 +837,8 @@ Game_BattlerBase.prototype.setWarmup = function(skillId, value) {
 
 Game_BattlerBase.prototype.startWarmups = function() {
     if (this._warmupTurns === undefined) this.clearWarmups();
-    for (var i = 0; i < this.skills().length; ++i) {
-      var skill = this.skills()[i];
+    for (var i = 0; i < this.allSkills().length; ++i) {
+      var skill = this.allSkills()[i];
       if (!skill) continue;
       var warmup = skill.warmup;
       if (skill.warmupEval.length > 0) {
@@ -916,8 +925,8 @@ Game_BattlerBase.prototype.paySkillCost = function(skill) {
 };
 
 Game_BattlerBase.prototype.payGlobalCooldown = function(mainSkill) {
-    for (var i = 0; i < this.skills().length; ++i) {
-      var skill = this.skills()[i];
+    for (var i = 0; i < this.allSkills().length; ++i) {
+      var skill = this.allSkills()[i];
       if (!skill) continue;
       var value = mainSkill.globalCooldown;
       value *= this.cooldownDuration(mainSkill);
@@ -929,8 +938,8 @@ Game_BattlerBase.prototype.payGlobalCooldown = function(mainSkill) {
 Game_BattlerBase.prototype.payStypeCooldownCost = function(mainSkill) {
     for (var stypeId in mainSkill.stypeCooldown) {
       stypeId = parseInt(stypeId);
-      for (var i = 0; i < this.skills().length; ++i) {
-        var skill = this.skills()[i];
+      for (var i = 0; i < this.allSkills().length; ++i) {
+        var skill = this.allSkills()[i];
         if (!skill) continue;
         if (skill.stypeId !== stypeId) continue;
         var value = mainSkill.stypeCooldown[stypeId];
@@ -1004,8 +1013,8 @@ Game_BattlerBase.prototype.applyCooldownChange = function(skill) {
 Game_BattlerBase.prototype.applyStypeCooldownChange = function(mainSkill) {
     for (var stypeId in mainSkill.stypeCooldownChange) {
       stypeId = parseInt(stypeId);
-      for (var i = 0; i < this.skills().length; ++i) {
-        var skill = this.skills()[i];
+      for (var i = 0; i < this.allSkills().length; ++i) {
+        var skill = this.allSkills()[i];
         if (!skill) continue;
         if (skill.stypeId !== stypeId) continue;
         if (!mainSkill.stypeCooldownChange[stypeId]) continue;
@@ -1016,8 +1025,8 @@ Game_BattlerBase.prototype.applyStypeCooldownChange = function(mainSkill) {
 };
 
 Game_BattlerBase.prototype.applyGlobalCooldownChange = function(mainSkill) {
-    for (var i = 0; i < this.skills().length; ++i) {
-      var skill = this.skills()[i];
+    for (var i = 0; i < this.allSkills().length; ++i) {
+      var skill = this.allSkills()[i];
       if (!skill) continue;
       var value = mainSkill.globalCooldownChange;
       this.addCooldown(skill.id, value);
@@ -1144,6 +1153,14 @@ if (Imported.YEP_BattleEngineCore) {
   };
 
 }; // Imported.YEP_BattleEngineCore
+
+Game_Battler.prototype.allSkills = function() {
+  var prevCase = $gameTemp._disableBattleSkills;
+  $gameTemp._disableBattleSkills = true;
+  var skills = this.skills();
+  $gameTemp._disableBattleSkills = prevCase;
+  return skills;
+};
 
 //=============================================================================
 // Game_Actor

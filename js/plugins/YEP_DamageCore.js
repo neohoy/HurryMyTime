@@ -8,10 +8,11 @@ Imported.YEP_DamageCore = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.DMG = Yanfly.DMG || {};
+Yanfly.DMG.version = 1.05;
 
 //=============================================================================
  /*:
- * @plugindesc v1.04 Expand the control you have over the game's damage
+ * @plugindesc v1.05 Expand the control you have over the game's damage
  * calculation with more features and effects.
  * @author Yanfly Engine Plugins
  *
@@ -697,6 +698,10 @@ Yanfly.DMG = Yanfly.DMG || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.05:
+ * - Added failsafe for damage cap check in case Lunatic Mode effects of other
+ * plugins would push the damage past the capped amount.
+ *
  * Version 1.04:
  * - Rewored Damage Steps 1 through 8. If you're updating from an old version,
  * please update the these manually:
@@ -767,14 +772,14 @@ DataManager.isDatabaseLoaded = function() {
       this.processDMGNotetags2($dataStates);
       Yanfly._loaded_YEP_DamageCore = true;
     }
-    return true;
+		return true;
 };
 
 DataManager.processDMGNotetags1 = function(group) {
   var noteD1 = /<(?:DAMAGE CAP|HEAL CAP|HEALING CAP):[ ](\d+)>/i;
   for (var n = 1; n < group.length; n++) {
-    var obj = group[n];
-    var notedata = obj.note.split(/[\r\n]+/);
+		var obj = group[n];
+		var notedata = obj.note.split(/[\r\n]+/);
 
     var damageFormulaMode = false;
     obj.damage.custom = false;
@@ -782,7 +787,7 @@ DataManager.processDMGNotetags1 = function(group) {
     obj.damageCap = undefined;
 
     for (var i = 0; i < notedata.length; i++) {
-      var line = notedata[i];
+			var line = notedata[i];
       if (line.match(/<(?:BREAK DAMAGE CAP|BYPASS DAMAGE CAP)>/i)) {
         obj.breakDamageCap = true;
         obj.damageCap = undefined;
@@ -790,16 +795,16 @@ DataManager.processDMGNotetags1 = function(group) {
         obj.damageCap = parseInt(RegExp.$1);
         obj.breakDamageCap = false;
       } else if (line.match(/<(?:DAMAGE FORMULA)>/i)) {
-        damageFormulaMode = true;
+				damageFormulaMode = true;
         obj.damage.formula = '';
         obj.damage.custom = true;
-      } else if (line.match(/<\/(?:DAMAGE FORMULA)>/i)) {
-        damageFormulaMode = false;
-      } else if (damageFormulaMode) {
+			} else if (line.match(/<\/(?:DAMAGE FORMULA)>/i)) {
+				damageFormulaMode = false;
+			} else if (damageFormulaMode) {
         obj.damage.formula = obj.damage.formula + line + '\n';
       }
-    }
-  }
+		}
+	}
 };
 
 DataManager.processDMGNotetags2 = function(group) {
@@ -807,17 +812,17 @@ DataManager.processDMGNotetags2 = function(group) {
   var noteD2 = /<(?:DAMAGE CAP):[ ](\d+)>/i;
   var noteD3 = /<(?:HEAL CAP|HEALING CAP):[ ](\d+)>/i;
   for (var n = 1; n < group.length; n++) {
-    var obj = group[n];
-    var notedata = obj.note.split(/[\r\n]+/);
+		var obj = group[n];
+		var notedata = obj.note.split(/[\r\n]+/);
 
     obj.breakDamageCap = undefined;
     obj.damageCap = undefined;
     obj.healCap = undefined;
 
-    for (var i = 0; i < notedata.length; i++) {
-      var line = notedata[i];
-      if (line.match(noteD1)) {
-        obj.breakDamageCap = true;
+		for (var i = 0; i < notedata.length; i++) {
+			var line = notedata[i];
+			if (line.match(noteD1)) {
+				obj.breakDamageCap = true;
         obj.damageCap = undefined;
         obj.healCap = undefined;
       } else if (line.match(noteD2)) {
@@ -827,8 +832,8 @@ DataManager.processDMGNotetags2 = function(group) {
         obj.healCap = parseInt(RegExp.$1) * -1;
         obj.breakDamageCap = undefined;
       }
-    }
-  }
+		}
+	}
 };
 
 //=============================================================================
@@ -1312,7 +1317,7 @@ Game_Action.prototype.applyMinimumDamage = function(value, baseDamage, target) {
     } else if (baseDamage < 0) {
       value = Math.min(0, value);
     }
-    if (this.isDamageCapped(this.item())) {
+    if (this.isDamageCapped()) {
       if ($gameSystem.getActSeqDamageCap() !== undefined) {
         var min = $gameSystem.getActSeqDamageCap() * -1;
         var max = $gameSystem.getActSeqDamageCap();
@@ -1328,12 +1333,25 @@ Game_Action.prototype.applyMinimumDamage = function(value, baseDamage, target) {
     return value;
 };
 
-Game_Action.prototype.isDamageCapped = function(item) {
+Game_Action.prototype.isDamageCapped = function() {
+    var item = this.item();
     if ($gameSystem.getActSeqBypassDamageCap()) return false;
     if ($gameSystem.getActSeqDamageCap() !== undefined) return true;
     if (item.damageCap !== undefined) return true;
     if (item.breakDamageCap) return false;
     return this.subject().isDamageCapped();
+};
+
+Yanfly.DMG.Game_Action_executeHpDamage = Game_Action.prototype.executeHpDamage;
+Game_Action.prototype.executeHpDamage = function(target, value) {
+  value = this.applyMinimumDamage(value, value, target);
+  Yanfly.DMG.Game_Action_executeHpDamage.call(this, target, value);
+};
+
+Yanfly.DMG.Game_Action_executeMpDamage = Game_Action.prototype.executeMpDamage;
+Game_Action.prototype.executeMpDamage = function(target, value) {
+  value = this.applyMinimumDamage(value, value, target);
+  Yanfly.DMG.Game_Action_executeMpDamage.call(this, target, value);
 };
 
 //=============================================================================
@@ -1345,7 +1363,7 @@ Yanfly.DMG.Game_Interpreter_pluginCommand =
 Game_Interpreter.prototype.pluginCommand = function(command, args) {
     Yanfly.DMG.Game_Interpreter_pluginCommand.call(this, command, args)
     if (command === 'SetDamageCap') this.setDamageCap(args);
-    if (command === 'SetHealingCap') this.setHealingCap(args);
+		if (command === 'SetHealingCap') this.setHealingCap(args);
     if (command === 'EnableDamageCap') this.setDefaultDamageCap(true);
     if (command === 'DisableDamageCap') this.setDefaultDamageCap(false);
 };

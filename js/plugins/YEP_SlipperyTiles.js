@@ -11,7 +11,7 @@ Yanfly.Slip = Yanfly.Slip || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.03 You can create slippery tiles by marking them with
+ * @plugindesc v1.04 You can create slippery tiles by marking them with
  * either a terrain tag or a region number.
  * @author Yanfly Engine Plugins
  *
@@ -22,6 +22,11 @@ Yanfly.Slip = Yanfly.Slip || {};
  * @param Slippery Region
  * @desc Any tile marked with this region is a slippery tile
  * regardless of terrain tag. Use 0 to ignore.
+ * @default 0
+ *
+ * @param Slippery Speed
+ * @desc Change the speed of the player while on a slippery tile to
+ * this speed instead. Leave at 0 to keep current speed.
  * @default 0
  *
  * @help
@@ -48,6 +53,10 @@ Yanfly.Slip = Yanfly.Slip || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.04:
+ * - Added 'Slippery Speed' plugin parameter to let you change the speed of
+ * a character when its on a slippery tile.
+ *
  * Version 1.03:
  * - Added anti-crash for switch checks from battle tests.
  *
@@ -71,6 +80,7 @@ Yanfly.Param = Yanfly.Param || {};
 
 Yanfly.Param.SlipRegion = Number(Yanfly.Parameters['Slippery Region']);
 Yanfly.Param.SlipFrame = Number(Yanfly.Parameters['Slippery Frame']);
+Yanfly.Param.SlipSpeed = Number(Yanfly.Parameters['Slippery Speed']);
 
 //=============================================================================
 // DataManager
@@ -138,6 +148,15 @@ Yanfly.Slip.Game_CharacterBase_pattern = Game_CharacterBase.prototype.pattern;
 Game_CharacterBase.prototype.pattern = function() {
     if (this.slipperyPose()) return Yanfly.Param.SlipFrame;
     return Yanfly.Slip.Game_CharacterBase_pattern.call(this);
+};
+
+Yanfly.Slip.Game_CharacterBase_realMoveSpeed =
+  Game_CharacterBase.prototype.realMoveSpeed;
+Game_CharacterBase.prototype.realMoveSpeed = function() {
+    if (this.onSlipperyFloor() && Yanfly.Param.SlipSpeed > 0) {
+      return Yanfly.Param.SlipSpeed;
+    }
+    return Yanfly.Slip.Game_CharacterBase_realMoveSpeed.call(this);
 };
 
 //=============================================================================

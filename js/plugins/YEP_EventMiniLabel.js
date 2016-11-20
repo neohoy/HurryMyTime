@@ -11,7 +11,7 @@ Yanfly.EML = Yanfly.EML || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.09 Creates miniature-sized labels over events to allow
+ * @plugindesc v1.10 Creates miniature-sized labels over events to allow
  * you to insert whatever text you'd like in them.
  * @author Yanfly Engine Plugins
  *
@@ -107,6 +107,10 @@ Yanfly.EML = Yanfly.EML || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.10:
+ * - Mini Windows will now readjust their size to show at normal scale if the
+ * map is zoomed in.
  *
  * Version 1.09:
  * - Fixed a bug that caused Mini Labels that started off as hidden to remain
@@ -465,6 +469,7 @@ Yanfly.EML.Sprite_Character_update = Sprite_Character.prototype.update;
 Sprite_Character.prototype.update = function() {
     Yanfly.EML.Sprite_Character_update.call(this);
     this.updateMiniLabel();
+    this.updateMiniLabelZoom();
 };
 
 Sprite_Character.prototype.updateMiniLabel = function() {
@@ -484,8 +489,18 @@ Sprite_Character.prototype.setupMiniLabel = function() {
 
 Sprite_Character.prototype.positionMiniLabel = function() {
     var win = this._miniLabel;
-    win.x = this.x + win.width / -2 + win.bufferX();
-    win.y = this.y + (this.height * -1) - win.height + win.bufferY();
+    var width = win.width * win.scale.x;
+    win.x = this.x + width / -2 + win.bufferX();
+    var height = win.height * win.scale.y;
+    var buffer = win.bufferY() * win.scale.y;
+    win.y = this.y + (this.height * -1) - height + buffer;
+};
+
+Sprite_Character.prototype.updateMiniLabelZoom = function() {
+  if (!this._miniLabel) return;
+  var spriteset = SceneManager._scene._spriteset;
+  this._miniLabel.scale.x = 1 / spriteset.scale.x;
+  this._miniLabel.scale.y = 1 / spriteset.scale.y;
 };
 
 Sprite_Character.prototype.refreshMiniLabel = function() {

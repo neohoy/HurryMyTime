@@ -8,10 +8,11 @@ Imported.YEP_EquipBattleSkills = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.EBS = Yanfly.EBS || {};
+Yanfly.EBS.version = 1.09;
 
 //=============================================================================
  /*:
- * @plugindesc v1.06b Adds a new system where players can only bring
+ * @plugindesc v1.09 Adds a new system where players can only bring
  * equipped skills to battle.
  * @author Yanfly Engine Plugins
  *
@@ -197,6 +198,15 @@ Yanfly.EBS = Yanfly.EBS || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.09:
+ * - Fixed a bug that caused equipped skills to not list their applied states.
+ *
+ * Version 1.08:
+ * - Optimization update.
+ *
+ * Version 1.07:
+ * - Updated for RPG Maker MV version 1.3.2.
  *
  * Version 1.06b:
  * - Users with Skill Core and using the <Hide in Battle> notetag will now have
@@ -508,16 +518,19 @@ Game_Actor.prototype.maxBattleSkills = function() {
   if (this._setMaxBattleSkills !== undefined) return this._setMaxBattleSkills;
   var value = this.actor().startingSkillSlots;
   value += this.currentClass().equipSkillSlots;
-  for (var i = 0; i < this.battleSkillsRaw().length; ++i) {
-    var skill = $dataSkills[this.battleSkillsRaw()[i]];
+  var battleSkillsRaw = this.battleSkillsRaw();
+  for (var i = 0; i < battleSkillsRaw.length; ++i) {
+    var skill = $dataSkills[battleSkillsRaw[i]];
     if (skill) value += skill.equipSkillSlots;
   }
-  for (var i = 0; i < this.equips().length; ++i) {
-    var equip = this.equips()[i];
+  var equips = this.equips();
+  for (var i = 0; i < equips.length; ++i) {
+    var equip = equips[i];
     if (equip) value += equip.equipSkillSlots;
   }
-  for (var i = 0; i < this.states().length; ++i) {
-    var state = this.states()[i];
+  var states = this.states();
+  for (var i = 0; i < states.length; ++i) {
+    var state = states[i];
     if (state) value += state.equipSkillSlots;
   }
   value += this.getBattleSkillMaxPlus();
@@ -550,13 +563,17 @@ Game_Actor.prototype.battleSkillsRaw = function() {
 
 Yanfly.EBS.Game_Actor_learnSkill = Game_Actor.prototype.learnSkill;
 Game_Actor.prototype.learnSkill = function(skillId) {
-    var hasLearnedSkill = this.isLearnedSkill(skillId);
+    var hasLearnedSkill = this.isLearnedSkillRaw(skillId);
     Yanfly.EBS.Game_Actor_learnSkill.call(this, skillId);
     this.removeHiddenEquippedSkill(skillId);
     if (!hasLearnedSkill) {
       var slotId = this._battleSkills.indexOf(0);
       if (slotId !== -1) this.equipSkill(skillId, slotId);
     }
+};
+
+Game_Actor.prototype.isLearnedSkillRaw = function(skillId) {
+    return this._skills.contains(skillId);
 };
 
 Game_Actor.prototype.removeHiddenEquippedSkill = function(skillId) {
@@ -621,8 +638,9 @@ Game_Actor.prototype.canEquipSkill = function(skill) {
 Yanfly.EBS.Game_Actor_paramPlus = Game_Actor.prototype.paramPlus;
 Game_Actor.prototype.paramPlus = function(paramId) {
     var value = Yanfly.EBS.Game_Actor_paramPlus.call(this, paramId);
-    for (var i = 0; i < this.battleSkillsRaw().length; ++i) {
-      var skill = $dataSkills[this.battleSkillsRaw()[i]];
+    var battleSkillsRaw = this.battleSkillsRaw();
+    for (var i = 0; i < battleSkillsRaw.length; ++i) {
+      var skill = $dataSkills[battleSkillsRaw[i]];
       if (skill === null) continue;
       value += skill.equipParamBonus[paramId];
     }
@@ -631,12 +649,16 @@ Game_Actor.prototype.paramPlus = function(paramId) {
 
 Game_Actor.prototype.equipSkillStates = function() {
     var array = [];
-    for (var s = 0; s < this.battleSkillsRaw().length; ++s) {
-      var skill = $dataSkills[this.battleSkillsRaw()[s]];
+    var battleSkillsRaw = this.battleSkillsRaw();
+    var length = battleSkillsRaw.length;
+    for (var s = 0; s < length; ++s) {
+      var skill = $dataSkills[battleSkillsRaw[s]];
       if (skill === null) continue;
       for (var i = 0; i < skill.equipStates.length; ++i) {
         var state = $dataStates[skill.equipStates[i]];
-        if (state && !array.contains(state)) array.push(state);
+        if (!state) continue;
+        if (array.contains(state)) continue;
+        array.push(state);
       }
     }
     this.sortEquipStates(array);
@@ -985,7 +1007,7 @@ Window_SkillEquip.prototype.includes = function(item) {
         var length = item.hideIfLearnedSkill.length;
         for (var i = 0; i < length; ++i) {
           var skillId = item.hideIfLearnedSkill[i];
-          if (this._actor.isLearnedSkill(skillId)) return false;
+          if (this._actor.isLearnedSkillRaw(skillId)) return false;
         }
       }
     }

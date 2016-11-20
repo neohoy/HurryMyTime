@@ -11,7 +11,7 @@ Yanfly.Message = Yanfly.Message || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.15 Adds more features to the Message Window to customized
+ * @plugindesc v1.17 Adds more features to the Message Window to customized
  * the way your messages appear and functions.
  * @author Yanfly Engine Plugins
  *
@@ -55,6 +55,11 @@ Yanfly.Message = Yanfly.Message || {};
  * @param Word Wrap Space
  * @desc Insert a space with manual line breaks?
  * NO - false     YES - true
+ * @default false
+ *
+ * @param Tight Wrap
+ * @desc If true and using a face for the message, the message will
+ * wrap tighter. NO - false     YES - true
  * @default false
  *
  * @param ---Font---
@@ -305,6 +310,13 @@ Yanfly.Message = Yanfly.Message || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.17:
+ * - Compatibility update with Message Macros for 'Name Box Auto Close' option.
+ *
+ * Version 1.16:
+ * - Added 'Tight Wrap' plugin parameter as a word wrap option to make the
+ * word wrap tighter when using faces.
+ *
  * Version 1.15:
  * - Added a failsafe where if the name box window would be off the screen, it
  * will automatically reposition itself to under the main message window.
@@ -392,6 +404,7 @@ Yanfly.Param.MSGFFOn = eval(String(Yanfly.Parameters['Enable Fast Forward']));
 Yanfly.Param.MSGWordWrap = String(Yanfly.Parameters['Word Wrapping']);
 Yanfly.Param.MSGDescWrap = String(Yanfly.Parameters['Description Wrap']);
 Yanfly.Param.MSGWrapSpace = eval(String(Yanfly.Parameters['Word Wrap Space']));
+Yanfly.Param.MSGTightWrap = eval(String(Yanfly.Parameters['Tight Wrap']));
 
 Yanfly.Param.MSGFontName = String(Yanfly.Parameters['Font Name']);
 Yanfly.Param.MSGFontSize = Number(Yanfly.Parameters['Font Size']);
@@ -791,7 +804,11 @@ Window_Base.prototype.checkWordWrap = function(textState) {
       var word = textState.text.substring(textState.index, nextSpace);
       var size = this.textWidthExCheck(word);
     }
-    return (size + textState.x > this.contents.width);
+    return (size + textState.x > this.wordwrapWidth());
+};
+
+Window_Base.prototype.wordwrapWidth = function(){
+  return this.contents.width;
 };
 
 Window_Base.prototype.saveCurrentWindowSettings = function(){
@@ -1076,6 +1093,13 @@ Window_Message.prototype.windowWidth = function() {
     return $gameSystem.messageWidth();
 };
 
+Window_Message.prototype.wordwrapWidth = function(){
+  if (Yanfly.Param.MSGTightWrap && $gameMessage.faceName() !== '') {
+    return this.contents.width - this.newLineX();
+  }
+  return Window_Base.prototype.wordwrapWidth.call(this);
+};
+
 Window_Message.prototype.adjustWindowSettings = function() {
     this.width = this.windowWidth();
     this.height = Math.min(this.windowHeight(), Graphics.boxHeight);
@@ -1244,7 +1268,9 @@ Yanfly.Message.Window_Message_doesContinue =
 Window_Message.prototype.doesContinue = function() {
   var value = Yanfly.Message.Window_Message_doesContinue.call(this);
   if (!value) return false;
-  if (this.hasDifferentNameBoxText()) return false;
+  if (this.hasDifferentNameBoxText()) {
+    return false;
+  }
   return true;
 };
 
@@ -1255,12 +1281,31 @@ Window_Message.prototype.hasDifferentNameBoxText = function() {
   for (var i = 0; i < length; ++i) {
     var text = texts[i];
     if (text.length <= 0) continue;
+    if (Yanfly.MsgMacro) {
+      text = this.convertMacroText(text);
+      text = text.replace(/\x1b/gi, '\\');
+    }
     if (text.match(/\\(?:N|N1|N2|N3|N4|N5|NC|NR)<(.*)>/i)) {
       var name = String(RegExp.$1);
     } else if (text.match(/\\(?:ND|ND1|ND2|ND3|ND4|ND5|NDC|NDR)<(.*)>/i)) {
       var name = String(RegExp.$1);
     } else if (text.match(/\\(?:NT|NT1|NT2|NT3|NT4|NT5|NTC|NTR)<(.*)>/i)) {
       var name = String(RegExp.$1);
+    }
+    if (name) {
+      name = name.replace(/\\V\[(\d+)\]/gi, function() {
+        return $gameVariables.value(parseInt(arguments[1]));
+      }.bind(this));
+      name = name.replace(/\\V\[(\d+)\]/gi, function() {
+        return $gameVariables.value(parseInt(arguments[1]));
+      }.bind(this));
+      name = name.replace(/\\N\[(\d+)\]/gi, function() {
+        return this.actorName(parseInt(arguments[1]));
+      }.bind(this));
+      name = name.replace(/\\P\[(\d+)\]/gi, function() {
+        return this.partyMemberName(parseInt(arguments[1]));
+      }.bind(this));
+      name = name.replace(/\\/gi, '\x1b');
     }
     if (name && !open) return true;
     if (name && name !== this._nameWindow._lastNameText) {

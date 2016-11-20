@@ -11,7 +11,7 @@ Yanfly.ESTier = Yanfly.ESTier || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.01 (Requires YEP_EquipBattleSkills.js) Places equippable
+ * @plugindesc v1.02 (Requires YEP_EquipBattleSkills.js) Places equippable
  * skills in tiers to limit what players can equip.
  * @author Yanfly Engine Plugins
  *
@@ -177,6 +177,9 @@ Yanfly.ESTier = Yanfly.ESTier || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.02:
+ * - Updated for RPG Maker MV version 1.3.2.
+ *
  * Version 1.01:
  * - Added anti-crash measures when equipping skills.
  *
@@ -331,10 +334,14 @@ Game_Actor.prototype.equipSkillTiersOk = function() {
 
 Yanfly.ESTier.Game_Actor_learnSkill = Game_Actor.prototype.learnSkill;
 Game_Actor.prototype.learnSkill = function(skillId) {
-    var hasLearnedSkill = this.isLearnedSkill(skillId);
+    var hasLearnedSkill = this.isLearnedSkillRaw(skillId);
     if (!hasLearnedSkill) this._learningSkill = true;
     Yanfly.ESTier.Game_Actor_learnSkill.call(this, skillId);
     if (!hasLearnedSkill) this._learningSkill = undefined;
+};
+
+Game_Actor.prototype.isLearnedSkillRaw = function(skillId) {
+  return this._skills.contains(skillId);
 };
 
 Yanfly.ESTier.Game_Actor_equipSkill = Game_Actor.prototype.equipSkill;

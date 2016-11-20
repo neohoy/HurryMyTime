@@ -11,7 +11,7 @@ Yanfly.BSC = Yanfly.BSC || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.10b Alter the basic mechanics behind buffs and states
+ * @plugindesc v1.11 Alter the basic mechanics behind buffs and states
  * that aren't adjustable within the RPG Maker editor.
  * @author Yanfly Engine Plugins
  *
@@ -558,6 +558,10 @@ Yanfly.BSC = Yanfly.BSC || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.11:
+ * - Fixed a bug involving Lunatic state effects not occuring in the right
+ * order when a state is removed.
  *
  * Version 1.10b:
  * - Added new plugin parameter: Show Buff Rate. This will display the current
@@ -1497,9 +1501,10 @@ Game_Unit.prototype.processStateEval = function(type) {
     for (var i = 0; i < length1; ++i) {
       var member = this.allMembers()[i];
       if (!member) return;
-      var length2 = member.states().length;
+      var states = member.states();
+      var length2 = states.length;
       for (var j = 0; j < length2; ++j) {
-        var state = member.states()[j];
+        var state = states[j];
         if (state) member.customEffectEval(state.id, type);
       }
     }
@@ -1588,10 +1593,11 @@ Game_Action.prototype.applyDebuffTurnsEval = function(turn, paramId, target) {
 Game_Action.prototype.applyModifyStateTurns = function(target) {
     if (!this.item()) return;
     var affected = false;
-    var length = target.states().length;
+    var states = target.states()
+    var length = states.length;
     var removed = [];
     for (var i = 0; i < length; ++i) {
-      var state = target.states()[i];
+      var state = states[i];
       if (state.autoRemovalTiming <= 0) continue;
       if (!target.isStateAffected(state.id)) continue;
       var turn = target.stateTurns(state.id);
@@ -1663,9 +1669,10 @@ Game_Action.prototype.initiateStateEffects = function(target, stateId) {
 };
 
 Game_Action.prototype.onSelectStateEffects = function(target) {
-    var length = target.states().length;
+    var states = target.states();
+    var length = states.length;
     for (var i = 0; i < length; ++i) {
-      var state = target.states()[i];
+      var state = states[i];
       if (!state) continue;
       this.selectStateEffects(target, state.id)
     }
@@ -1676,9 +1683,10 @@ Game_Action.prototype.selectStateEffects = function(target, stateId) {
 };
 
 Game_Action.prototype.onDeselectStateEffects = function(target) {
-    var length = target.states().length;
+    var states = target.states();
+    var length = states.length;
     for (var i = 0; i < length; ++i) {
-      var state = target.states()[i];
+      var state = states[i];
       if (!state) continue;
       this.deselectStateEffects(target, state.id)
     }
@@ -1689,9 +1697,10 @@ Game_Action.prototype.deselectStateEffects = function(target, stateId) {
 };
 
 Game_Action.prototype.offApplyStateEffects = function(target) {
-    var length = this.subject().states().length;
+    var states = this.subject().states();
+    var length = states.length;
     for (var i = 0; i < length; ++i) {
-      var state = this.subject().states()[i];
+      var state = states[i];
       if (!state) continue;
       this.concludeStateEffects(target, state.id)
     }
@@ -1711,9 +1720,10 @@ Game_Action.prototype.executeDamage = function(target, value) {
 };
 
 Game_Action.prototype.onPreDamageStateEffects = function(target, value) {
-    var length = this.subject().states().length;
+    var states = this.subject().states();
+    var length = states.length;
     for (var i = 0; i < length; ++i) {
-      var state = this.subject().states()[i];
+      var state = states[i];
       if (!state) continue;
       value = this.confirmStateEffects(target, state.id, value);
     }
@@ -1726,9 +1736,10 @@ Game_Action.prototype.confirmStateEffects = function(target, stateId, value) {
 };
 
 Game_Action.prototype.onReactStateEffects = function(target, value) {
-    var length = target.states().length;
+    var states = target.states();
+    var length = states.length;
     for (var i = 0; i < length; ++i) {
-      var state = target.states()[i];
+      var state = states[i];
       if (!state) continue;
       value = this.reactStateEffects(target, state.id, value);
     }
@@ -1740,9 +1751,10 @@ Game_Action.prototype.reactStateEffects = function(target, stateId, value) {
 };
 
 Game_Action.prototype.onRespondStateEffects = function(target, value) {
-    var length = target.states().length;
+    var states = target.states();
+    var length = states.length;
     for (var i = 0; i < length; ++i) {
-      var state = target.states()[i];
+      var state = states[i];
       if (!state) continue;
       value = this.respondStateEffects(target, state.id, value);
     }
@@ -1755,9 +1767,10 @@ Game_Action.prototype.respondStateEffects = function(target, stateId, value) {
 };
 
 Game_Action.prototype.onPostDamageStateEffects = function(target, value) {
-    var length = this.subject().states().length;
+    var states = this.subject().states();
+    var length = states.length;
     for (var i = 0; i < length; ++i) {
-      var state = this.subject().states()[i];
+      var state = states[i];
       if (!state) continue;
       value = this.establishStateEffects(target, state.id, value);
     }

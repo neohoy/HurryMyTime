@@ -8,10 +8,11 @@ Imported.YEP_X_BattleStatistics = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.BStats = Yanfly.BStats || {};
+Yanfly.BStats.version = 1.01;
 
 //=============================================================================
  /*:
- * @plugindesc v1.00 (Requires YEP_StatusMenuCore.js) Logs the battle
+ * @plugindesc v1.01 (Requires YEP_StatusMenuCore.js) Logs the battle
  * statistics of actors for your players to view.
  * @author Yanfly Engine Plugins
  *
@@ -113,6 +114,19 @@ Yanfly.BStats = Yanfly.BStats || {};
  *
  * Healing Taken
  * Total amount of healing taken by the actor over the course of the game.
+ *
+ * ============================================================================
+ * Changelog
+ * ============================================================================
+ *
+ * Version 1.01:
+ * - Calculations for recorded HP damage dealt are now calculated based on the
+ * actual HP damage taken as per the results rather than based off of the raw
+ * incoming value (in the event that raw value gets modified as per the effects
+ * of other plugins).
+ *
+ * Version 1.00:
+ * - Finished Plugin!
  */
 //=============================================================================
 
@@ -301,17 +315,18 @@ Game_Actor.prototype.increaseTotalHealingTaken = function(value) {
 //=============================================================================
 
 Yanfly.BStats.Game_Action_executeHpDamage =
-		Game_Action.prototype.executeHpDamage;
+    Game_Action.prototype.executeHpDamage;
 Game_Action.prototype.executeHpDamage = function(target, value) {
     Yanfly.BStats.Game_Action_executeHpDamage.call(this, target, value);
-		if (this.subject().isActor()) {
-			if (value > 0) this.subject().increaseTotalDamageDealt(value);
-			if (value < 0) this.subject().increaseTotalHealingDealt(-value);
-		}
-		if (target.isActor()) {
-			if (value > 0) target.increaseTotalDamageTaken(value);
-			if (value < 0) target.increaseTotalHealingTaken(-value);
-		}
+    var dmg = target.result().hpDamage;
+    if (this.subject().isActor()) {
+      if (dmg > 0) this.subject().increaseTotalDamageDealt(dmg);
+      if (dmg < 0) this.subject().increaseTotalHealingDealt(-dmg);
+    }
+    if (target.isActor()) {
+      if (dmg > 0) target.increaseTotalDamageTaken(dmg);
+      if (dmg < 0) target.increaseTotalHealingTaken(-dmg);
+    }
 };
 
 //=============================================================================

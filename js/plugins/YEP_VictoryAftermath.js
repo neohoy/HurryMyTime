@@ -11,7 +11,7 @@ Yanfly.VA = Yanfly.VA || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.05b Display an informative window after a battle is over
+ * @plugindesc v1.06 Display an informative window after a battle is over
  * instead of message box text stating what the party earned.
  * @author Yanfly Engine Plugins
  *
@@ -173,6 +173,9 @@ Yanfly.VA = Yanfly.VA || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.06:
+ * - Updated for RPG Maker MV version 1.3.2.
  *
  * Version 1.05a:
  * - Added 'Font Size' plugin parameter to alter the font size for the battle
@@ -370,9 +373,13 @@ Game_Actor.prototype.clearVictoryData = function() {
     this._victorySkills = undefined;
 };
 
+Game_Actor.prototype.isLearnedSkillRaw = function(skillId) {
+  return this._skills.contains(skillId);
+};
+
 Yanfly.VA.Game_Actor_learnSkill = Game_Actor.prototype.learnSkill;
 Game_Actor.prototype.learnSkill = function(skillId) {
-    if (!this.isLearnedSkill(skillId) && this._victoryPhase) {
+    if (!this.isLearnedSkillRaw(skillId) && this._victoryPhase) {
       this._victorySkills.push(skillId);
     }
     Yanfly.VA.Game_Actor_learnSkill.call(this, skillId);

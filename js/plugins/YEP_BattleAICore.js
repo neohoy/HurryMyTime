@@ -11,7 +11,7 @@ Yanfly.CoreAI = Yanfly.CoreAI || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.08 This plugin allows you to structure battle A.I.
+ * @plugindesc v1.09 This plugin allows you to structure battle A.I.
  * patterns with more control.
  * @author Yanfly Engine Plugins
  *
@@ -279,6 +279,20 @@ Yanfly.CoreAI = Yanfly.CoreAI || {};
  * =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
  *
  * =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+ * USER stat PARAM eval
+ *- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ * Replace 'stat' with either 'atk', 'def', 'mat', 'mdf', 'agi', 'luk',
+ * 'maxhp', 'maxmp', 'hp', 'mp', 'hp%', 'mp%', or 'level' to run it in a
+ * condition check again to see if the action gets passed. If the user's param
+ * matches the conditions, the check is fulfilled.
+ *- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ * Example:   User HP% param <= 50%: Heal, Lowest HP%
+ *            User MP param > 90: Mana Drain, Highest MP
+ *            User ATK param > user.atk: Power Break, Highest ATK
+ *            User LEVEL param > 10 && target.notState(5): Blind, Random
+ * =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+ *
+ * =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
  * VARIABLE X eval
  *- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  * This will call forth the value of variable 'x' to partake in an eval
@@ -311,6 +325,7 @@ Yanfly.CoreAI = Yanfly.CoreAI || {};
  * ----------------------------------------------------------------------------
  *      <<nothing>>       Selects a random member of the valid target group.
  *      First             Selects first member of the valid target group.
+ *      User              Selects the user itself.
  *      Highest MaxHP     Selects highest MaxHP valid target.
  *      Highest HP        Selects highest HP valid target.
  *      Highest HP%       Selects highest HP% valid target. *Note1
@@ -372,10 +387,14 @@ Yanfly.CoreAI = Yanfly.CoreAI || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.09:
+ * - Added 'user' to the list of valid skill targets.
+ * - Added 'USER stat PARAM eval' to valid conditions.
+ *
  * Version 1.08:
- * - Optimization update.
  * - Neutral elemental resistance is now considered to be above 90% and under
  * 110% for a better range of activation.
+ * - Optimization update.
  *
  * Version 1.07:
  * - Fixed a compatibility bug that caused certain conditions to bypass taunts.
@@ -826,6 +845,9 @@ AIManager.setProperTarget = function(group) {
     var line = this._aiTarget.toUpperCase();
     if (line.match(/FIRST/i)) {
       action.setTarget(0);
+    } else if (line.match(/USER/i)) {
+      var index = group.indexOf();
+      action.setTarget(action.subject().index());
     } else if (line.match(/HIGHEST[ ](.*)/i)) {
       var param = this.getParamId(String(RegExp.$1));
       if (param < 0) return action.setTarget(randomTarget.index());
@@ -1094,7 +1116,6 @@ AIManager.elementRateMatch = function(target, elementId, type) {
     } else if (['WEAK', 'WEAKNESS', 'VULNERABLE'].contains(type)) {
       return rate > 1.00;
     } else if (['RESIST', 'RESISTANT', 'STRONG'].contains(type)) {
-      console.log(rate);
       return rate < 1.00;
     } else if (['NULL', 'CANCEL', 'NO EFFECT'].contains(type)) {
       return rate === 0.00;
@@ -1129,6 +1150,12 @@ AIManager.passAIConditions = function(line) {
       var members = String(RegExp.$1);
       var condition = String(RegExp.$2);
       return this.conditionGroupDead(members, condition);
+    }
+    // USER PARAM EVAL
+    if (line.match(/USER[ ](.*)[ ]PARAM[ ](.*)/i)) {
+      var paramId = this.getParamId(String(RegExp.$1));
+      var condition = String(RegExp.$2);
+      return this.conditionUserParamEval(paramId, condition);
     }
     // PARAM EVAL
     if (line.match(/(.*)[ ]PARAM[ ](.*)/i)) {
@@ -1283,6 +1310,41 @@ AIManager.conditionPartyLevel = function(type, condition) {
     if (!eval(condition)) return false;
     var group = this.getActionGroup();
     this.setProperTarget(group);
+    return true;
+};
+
+AIManager.conditionUserParamEval = function(paramId, condition) {
+    var action = this.action();
+    var item = action.item();
+    var user = this.battler();
+    var s = $gameSwitches._data;
+    var v = $gameVariables._data;
+    condition = condition.replace(/(\d+)([%％])/g, function() {
+      return this.convertIntegerPercent(parseInt(arguments[1]));
+    }.bind(this));
+    if (paramId < 0) return false;
+    if (paramId >= 0 && paramId <= 7) {
+      condition = 'user.param(paramId) ' + condition;
+    } else if (paramId === 8) {
+      condition = 'user.hp ' + condition;
+    } else if (paramId === 9) {
+      condition = 'user.mp ' + condition;
+    } else if (paramId === 10) {
+      condition = 'user.hp / user.mhp ' + condition;
+    } else if (paramId === 11) {
+      condition = 'user.mp / user.mmp ' + condition;
+    } else if (paramId === 12) {
+      condition = 'user.level ' + condition;
+    }
+    var group = this.getActionGroup();
+    var validTargets = [];
+    for (var i = 0; i < group.length; ++i) {
+      var target = group[i];
+      if (!target) continue;
+      if (eval(condition)) validTargets.push(target);
+    }
+    if (validTargets.length <= 0) return false;
+    this.setProperTarget(validTargets);
     return true;
 };
 

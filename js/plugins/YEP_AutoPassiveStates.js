@@ -11,7 +11,7 @@ Yanfly.APS = Yanfly.APS || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.10 This plugin allows for some states to function as
+ * @plugindesc v1.12 This plugin allows for some states to function as
  * passives for actors, enemies, skills, and equips.
  * @author Yanfly Engine Plugins
  *
@@ -22,6 +22,11 @@ Yanfly.APS = Yanfly.APS || {};
  *
  * @param Enemy Passives
  * @desc These states will always appear on enemies as passives.
+ * Place a space in between each state ID.
+ * @default 0
+ *
+ * @param Global Passives
+ * @desc These states will always appear on all battlers as passives.
  * Place a space in between each state ID.
  * @default 0
  *
@@ -111,6 +116,13 @@ Yanfly.APS = Yanfly.APS || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.12:
+ * - Implemented <Custom Passive Condition> to now affect passive state ID's
+ * added by Equip Battle Skills.
+ *
+ * Version 1.11:
+ * - Added 'Global Passives' that encompass both actors and enemies.
+ *
  * Version 1.10:
  * - Added compatibility functionality for Equip Battle Skills to add the
  * equipped passive states during battle test.
@@ -173,6 +185,13 @@ Yanfly.SetupParameters = function() {
   for (var i = 0; i < Yanfly.Param.APSEnemyPas.length; ++i) {
     Yanfly.Param.APSEnemyPas[i] = parseInt(Yanfly.Param.APSEnemyPas[i]);
     Yanfly.Param.APSEnemyPas[i] = Yanfly.Param.APSEnemyPas[i] || 0;
+  }
+  Yanfly.Param.APSGlobalPas = String(Yanfly.Parameters['Global Passives']);
+  Yanfly.Param.APSGlobalPas = Yanfly.Param.APSGlobalPas.split(' ');
+  for (var i = 0; i < Yanfly.Param.APSGlobalPas.length; ++i) {
+    id = parseInt(Yanfly.Param.APSGlobalPas[i]);
+    Yanfly.Param.APSActorPas.push(id);
+    Yanfly.Param.APSEnemyPas.push(id);
   }
 };
 Yanfly.SetupParameters();
@@ -363,7 +382,13 @@ Game_BattlerBase.prototype.getPassiveStateData = function(obj) {
       array.push(stateId);
     }
     var added = this.addEquipBattleTestSkillPassives(obj);
-    if (added.length > 0) array = array.concat(added);
+    if (added.length > 0) {
+      for (var i = 0; i < added.length; ++i) {
+        var stateId = added[i];
+        if (!this.meetPassiveStateCondition(stateId)) continue;
+        array.push(stateId);
+      }
+    }
     return array;
 };
 

@@ -11,7 +11,7 @@ Yanfly.Row = Yanfly.Row || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.10 Places party members into row formations to give
+ * @plugindesc v1.11 Places party members into row formations to give
  * them distinct advantages based on row location.
  * @author Yanfly Engine Plugins
  *
@@ -708,6 +708,9 @@ Yanfly.Row = Yanfly.Row || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.11:
+ * - Updated the conditional passives for rows to occur more frequently.
+ *
  * Version 1.10:
  * - Updated <Default Row: x> notetag to also include <Default Row: x, x, x> so
  * that actors or enemies can start in any of those default rows. If multiple
@@ -1069,6 +1072,7 @@ Yanfly.Row.Game_BattlerBase_refresh = Game_BattlerBase.prototype.refresh;
 Game_BattlerBase.prototype.refresh = function() {
     this._isRowLocked = undefined;
     this._requestRowStatesRefresh = true;
+    this._rowStatesRaw = undefined;
     Yanfly.Row.Game_BattlerBase_refresh.call(this);
 };
 
@@ -1408,7 +1412,8 @@ Game_Unit.prototype.rowMembers = function(rowId) {
     var length = this.members().length;
     for (var i = 0; i < length; ++i) {
       var member = this.members()[i];
-      if (member && member.row() === rowId) group.push(member);
+      if (!member) continue;
+      if (member.row() === rowId) group.push(member);
     }
     return group;
 };
@@ -1418,7 +1423,8 @@ Game_Unit.prototype.rowAliveMembers = function(rowId) {
     var length = this.aliveMembers().length;
     for (var i = 0; i < length; ++i) {
       var member = this.aliveMembers()[i];
-      if (member && member.row() === rowId) group.push(member);
+      if (!member) continue;
+      if (member.row() === rowId) group.push(member);
     }
     return group;
 };
@@ -1428,7 +1434,8 @@ Game_Unit.prototype.rowDeadMembers = function(rowId) {
     var length = this.deadMembers().length;
     for (var i = 0; i < length; ++i) {
       var member = this.deadMembers()[i];
-      if (member && member.row() === rowId) group.push(member);
+      if (!member) continue;
+      if (member.row() === rowId) group.push(member);
     }
     return group;
 };

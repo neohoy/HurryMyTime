@@ -11,7 +11,7 @@ Yanfly.Counter = Yanfly.Counter || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.05 (Requires YEP_BattleEngineCore.js) Gives you more
+ * @plugindesc v1.06 (Requires YEP_BattleEngineCore.js) Gives you more
  * control over how counters work in RPG Maker MV!
  * @author Yanfly Engine Plugins
  *
@@ -668,6 +668,9 @@ Yanfly.Counter = Yanfly.Counter || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ * 
+ * Version 1.06:
+ * - Updated for RPG Maker MV version 1.3.2.
  *
  * Version 1.05:
  * - Fixed a bug that caused the Eval: condition to not work and crash.
@@ -1032,7 +1035,7 @@ BattleManager.invokeCounterAttack = function(subject, target) {
       this.invokeNormalAction(subject, target);
       return;
     }
-    this._logWindow.displayActionResults(subject, subject);
+    this._logWindow.displayActionResults(target, subject);
     if (subject.isDead()) subject.performCollapse();
   } else {
     this.invokeNormalAction(subject, target);
