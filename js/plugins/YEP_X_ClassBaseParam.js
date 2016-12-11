@@ -8,10 +8,11 @@ Imported.YEP_X_ClassBaseParam = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.CBP = Yanfly.CBP || {};
+Yanfly.CBP.version = 1.03;
 
 //=============================================================================
  /*:
- * @plugindesc v1.02 (Requires YEP_BaseParamControl) Allow you to use
+ * @plugindesc v1.03 (Requires YEP_BaseParamControl) Allow you to use
  * formulas for class parameter growth.
  * @author Yanfly Engine Plugins
  *
@@ -82,6 +83,9 @@ Yanfly.CBP = Yanfly.CBP || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.03:
+ * - Lunatic Mode fail safes added.
  *
  * Version 1.02:
  * - Fixed a bug that caused the <Custom Param Formula> notetag to not work.
@@ -228,7 +232,12 @@ Game_Actor.prototype.classBaseParamFormula = function(formula, paramId, level) {
   var subject = this;
   var s = $gameSwitches._data;
   var v = $gameVariables._data;
-  eval(formula);
+  var code = formula;
+  try {
+    eval(code);
+  } catch (e) {
+    Yanfly.Util.displayError(e, code, 'CLASS BASE PARAM FORMULA ERROR');
+  }
   switch (paramId) {
   case 0:
     value += hp + maxhp + mhp;
@@ -269,6 +278,23 @@ Game_Actor.prototype.expForLevel = function(level) {
     return Math.max(value, 1);
   }
   return Yanfly.CBP.Game_Actor_expForLevel.call(this, level);
+};
+
+//=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

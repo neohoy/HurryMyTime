@@ -8,10 +8,11 @@ Imported.YEP_X_ItemDurability = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.IDur = Yanfly.IDur || {};
+Yanfly.IDur.version = 1.02;
 
 //=============================================================================
  /*:
- * @plugindesc v1.01a (Requires YEP_ItemCore.js) Independent equipment
+ * @plugindesc v1.02 (Requires YEP_ItemCore.js) Independent equipment
  * now have durability, which when runs out, will break.
  * @author Yanfly Engine Plugins
  *
@@ -484,6 +485,9 @@ Yanfly.IDur = Yanfly.IDur || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.02:
+ * - Lunatic Mode fail safes added.
+ *
  * Version 1.01a:
  * - Updated for RPG Maker MV version 1.1.0.
  * - Optimization update.
@@ -948,7 +952,11 @@ Game_Actor.prototype.customDurabilityBreakEval = function(item) {
     var target = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(effect);
+    try {
+      eval(effect);
+    } catch (e) {
+      Yanfly.Util.displayError(e, effect, 'DURABILITY BREAK SCRIPT ERROR');
+    }
 };
 
 Game_Actor.prototype.playDurabilityBreakSound = function(obj) {
@@ -1076,7 +1084,11 @@ Game_Action.prototype.durabilityEval = function(type, target, value) {
     var skill = this.item();
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(formula);
+    try {
+      eval(formula);
+    } catch (e) {
+      Yanfly.Util.displayError(e, formula, 'DURABILITY FORMULA ERROR');
+    }
     return value;
 };
 
@@ -1370,7 +1382,29 @@ Scene_Item.prototype.onRepairEval = function(effectItem) {
     if (!effect) return;
     if (effect === '') return;
     var item = this.item();
-    eval(effectItem.repairDurabilityEval);
+    var code = effectItem.repairDurabilityEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'REPAIR CUSTOM EFFECT ERROR');
+    }
+};
+
+//=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

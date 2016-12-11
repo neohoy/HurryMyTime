@@ -8,10 +8,11 @@ Imported.YEP_X_BattleSysATB = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.ATB = Yanfly.ATB || {};
+Yanfly.ATB.version = 1.25;
 
 //=============================================================================
  /*:
- * @plugindesc v1.24 (Requires YEP_BattleEngineCore.js) Add ATB (Active
+ * @plugindesc v1.25 (Requires YEP_BattleEngineCore.js) Add ATB (Active
  * Turn Battle) into your game using this plugin!
  * @author Yanfly Engine Plugins
  *
@@ -434,6 +435,9 @@ Yanfly.ATB = Yanfly.ATB || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.25:
+ * - Lunatic Mode fail safes added.
+ *
  * Version 1.24:
  * - During action end, a single tick will be forced to occur to prevent clash
  * amongst actors with similar AGI values and make tick values more unique.
@@ -536,6 +540,8 @@ Yanfly.ATB = Yanfly.ATB || {};
 //=============================================================================
 
 if (Imported.YEP_BattleEngineCore) {
+
+  if (Yanfly.BEC.version && Yanfly.BEC.version >= 1.42) {
 
 //=============================================================================
 // Parameter Variables
@@ -806,13 +812,25 @@ BattleManager.atbTickRate = function() {
 
 Yanfly.ATB.BattleManager_makeEscapeRatio = BattleManager.makeEscapeRatio;
 BattleManager.makeEscapeRatio = function() {
-    if (this.isATB()) {
-      this._escapeRatio = eval(Yanfly.Param.ATBEscapeRatio);
-      this._escapeFailBoost = eval(Yanfly.Param.ATBEscapeBoost);
-    } else {
-      this._escapeFailBoost = 0.1;
-      Yanfly.ATB.BattleManager_makeEscapeRatio.call(this);
+  if (this.isATB()) {
+    var code = Yanfly.Param.ATBEscapeRatio;
+    try {
+      this._escapeRatio = eval(code);
+    } catch (e) {
+      this._escapeRatio = 0;
+      Yanfly.Util.displayError(e, code, 'ATB ESCAPE RATIO ERROR');
     }
+    var code = Yanfly.Param.ATBEscapeBoost;
+    try {
+      this._escapeFailBoost = eval(code);
+    } catch (e) {
+      this._escapeFailBoost = 0;
+      Yanfly.Util.displayError(e, code, 'ATB ESCAPE BOOST ERROR');
+    }
+  } else {
+    this._escapeFailBoost = 0.1;
+    Yanfly.ATB.BattleManager_makeEscapeRatio.call(this);
+  }
 };
 
 Yanfly.ATB.BattleManager_startBattle = BattleManager.startBattle;
@@ -1500,7 +1518,12 @@ Game_Action.prototype.applyItemATBEvalEffect = function(target) {
     } else {
       var max = BattleManager.atbTarget();
     }
-    eval(item.atbEval);
+    var code = item.atbEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'ATB EVAL ERROR');
+    }
     target.setATBSpeed(speed);
     target.setATBCharge(charge);
 };
@@ -1531,7 +1554,12 @@ Game_Action.prototype.applyItemATBInterruptEval = function(target) {
     var v = $gameVariables._data;
     var speed = target.atbSpeed();
     var charge = target.atbCharge();
-    eval(item.atbInterruptEval);
+    var code = item.atbInterruptEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'ATB INTERRUPT EVAL ERROR');
+    }
     if (interrupt) target.processATBInterrupt();
 };
 
@@ -2286,6 +2314,34 @@ Scene_Battle.prototype.startActorCommandSelection = function() {
 };
 
 //=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
+};
+
+//=============================================================================
 // End of File
 //=============================================================================
-};
+} else { // Yanfly.BEC.version
+
+var text = '================================================================\n';
+text += 'YEP_X_AnimatedSVEnemies requires YEP_BattleEngineCore to be at the ';
+text += 'latest version to run properly.\n\nPlease go to www.yanfly.moe and ';
+text += 'update to the latest version for the YEP_BattleEngineCore plugin.\n';
+text += '================================================================\n';
+console.log(text);
+require('nw.gui').Window.get().showDevTools();
+
+} // Yanfly.BEC.version
+}; // YEP_BattleEngineCore

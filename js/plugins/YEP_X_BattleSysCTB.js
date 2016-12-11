@@ -8,10 +8,11 @@ Imported.YEP_X_BattleSysCTB = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.CTB = Yanfly.CTB || {};
+Yanfly.CTB.versio = 1.15;
 
 //=============================================================================
  /*:
- * @plugindesc v1.14a (Requires YEP_BattleEngineCore.js) Add CTB (Charge
+ * @plugindesc v1.15 (Requires YEP_BattleEngineCore.js) Add CTB (Charge
  * Turn Battle) into your game using this plugin!
  * @author Yanfly Engine Plugins
  *
@@ -388,6 +389,9 @@ Yanfly.CTB = Yanfly.CTB || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.15:
+ * - Lunatic Mode fail safes added.
+ *
  * Version 1.14a:
  * - Updated check for CTB Charging. Units in the turn order will not be
  * considered 'ready' unless they are in the front of the CTB Turn Order.
@@ -456,6 +460,8 @@ Yanfly.CTB = Yanfly.CTB || {};
 //=============================================================================
 
 if (Imported.YEP_BattleEngineCore) {
+
+if (Yanfly.BEC.version && Yanfly.BEC.version >= 1.42) {
 
 //=============================================================================
 // Parameter Variables
@@ -699,13 +705,25 @@ BattleManager.ctbTickRate = function() {
 
 Yanfly.CTB.BattleManager_makeEscapeRatio = BattleManager.makeEscapeRatio;
 BattleManager.makeEscapeRatio = function() {
-    if (this.isCTB()) {
-      this._escapeRatio = eval(Yanfly.Param.CTBEscapeRatio);
-      this._escapeFailBoost = eval(Yanfly.Param.CTBEscapeBoost);
-    } else {
-      this._escapeFailBoost = 0.1;
-      Yanfly.CTB.BattleManager_makeEscapeRatio.call(this);
+  if (this.isCTB()) {
+    var code = Yanfly.Param.CTBEscapeRatio;
+    try {
+      this._escapeRatio = eval(code);
+    } catch (e) {
+      this._escapeRatio = 0;
+      Yanfly.Util.displayError(e, code, 'CTB ESCAPE RATIO ERROR');
     }
+    var code = Yanfly.Param.CTBEscapeBoost;
+    try {
+      this._escapeFailBoost = eval(code);
+    } catch (e) {
+      this._escapeFailBoost = 0;
+      Yanfly.Util.displayError(e, code, 'CTB ESCAPE BOOST ERROR');
+    }
+  } else {
+    this._escapeFailBoost = 0.1;
+    Yanfly.CTB.BattleManager_makeEscapeRatio.call(this);
+  }
 };
 
 Yanfly.CTB.BattleManager_startBattle = BattleManager.startBattle;
@@ -1429,7 +1447,12 @@ Game_Action.prototype.applyItemCTBEvalEffect = function(target) {
     } else {
       var max = BattleManager.ctbTarget();
     }
-    eval(item.ctbEval);
+    var code = item.ctbEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'CTB EVAL ERROR');
+    }
     target.setCTBSpeed(speed);
     target.setCTBCharge(charge);
 };
@@ -1444,7 +1467,12 @@ Game_Action.prototype.applyItemCTBOrderEvalEffect = function(target) {
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
     var order = 0;
-    eval(item.ctbOrderEval);
+    var code = item.ctbOrderEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'CTB ORDER EVAL ERROR');
+    }
     target.ctbAlterTurnOrder(order);
 };
 
@@ -1801,7 +1829,12 @@ Game_Battler.prototype.afterCTBEval = function(item) {
     var v = $gameVariables._data;
     var speed = this._ctbSpeed;
     var max = BattleManager.ctbTarget();
-    eval(item.ctbAfterEval);
+    var code = item.ctbAfterEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'AFTER CTB ERROR');
+    }
     this.setCTBSpeed(speed);
 };
 
@@ -2553,6 +2586,34 @@ Scene_Battle.prototype.updateWindowPositionsCTB = function() {
 };
 
 //=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
+};
+
+//=============================================================================
 // End of File
 //=============================================================================
-};
+} else { // Yanfly.BEC.version
+
+var text = '================================================================\n';
+text += 'YEP_X_AnimatedSVEnemies requires YEP_BattleEngineCore to be at the ';
+text += 'latest version to run properly.\n\nPlease go to www.yanfly.moe and ';
+text += 'update to the latest version for the YEP_BattleEngineCore plugin.\n';
+text += '================================================================\n';
+console.log(text);
+require('nw.gui').Window.get().showDevTools();
+
+} // Yanfly.BEC.version
+}; // YEP_BattleEngineCore

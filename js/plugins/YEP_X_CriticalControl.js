@@ -8,10 +8,11 @@ Imported.YEP_X_CriticalControl = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.Crit = Yanfly.Crit || {};
+Yanfly.Crit.version = 1.03;
 
 //=============================================================================
  /*:
- * @plugindesc v1.02 (Requires YEP_DamageCore.js) Control over critical
+ * @plugindesc v1.03 (Requires YEP_DamageCore.js) Control over critical
  * hits have been added.
  * @author Yanfly Engine Plugins
  *
@@ -195,6 +196,9 @@ Yanfly.Crit = Yanfly.Crit || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.03:
+ * - Lunatic Mode fail safes added.
+ *
  * Version 1.02:
  * - Updated for RPG Maker MV version 1.1.0.
  *
@@ -228,9 +232,9 @@ Yanfly.Crit.DataManager_isDatabaseLoaded = DataManager.isDatabaseLoaded;
 DataManager.isDatabaseLoaded = function() {
   if (!Yanfly.Crit.DataManager_isDatabaseLoaded.call(this)) return false;
   if (!Yanfly._loaded_YEP_X_CriticalControl) {
-  	this.processCritNotetags1($dataSkills);
-  	this.processCritNotetags1($dataItems);
-  	this.processCritNotetags2($dataActors);
+    this.processCritNotetags1($dataSkills);
+    this.processCritNotetags1($dataItems);
+    this.processCritNotetags2($dataActors);
     this.processCritNotetags2($dataClasses);
     this.processCritNotetags2($dataWeapons);
     this.processCritNotetags2($dataArmors);
@@ -238,104 +242,104 @@ DataManager.isDatabaseLoaded = function() {
     this.processCritNotetags2($dataEnemies);
     Yanfly._loaded_YEP_X_CriticalControl = true;
   }
-	return true;
+  return true;
 };
 
 DataManager.processCritNotetags1 = function(group) {
   for (var n = 1; n < group.length; n++) {
-		var obj = group[n];
-		var notedata = obj.note.split(/[\r\n]+/);
+    var obj = group[n];
+    var notedata = obj.note.split(/[\r\n]+/);
 
-		var evalMode = 'none';
-		obj.critRate = Yanfly.Param.critRate;
+    var evalMode = 'none';
+    obj.critRate = Yanfly.Param.critRate;
     obj.critMult = Yanfly.Param.critMult;
-		obj.flatCrit = Yanfly.Param.flatCrit;
+    obj.flatCrit = Yanfly.Param.flatCrit;
 
-		for (var i = 0; i < notedata.length; i++) {
-			var line = notedata[i];
-			if (line.match(/<(?:CRITICAL RATE):[ ](\d+)([%％])>/i)) {
-				var rate = parseFloat(RegExp.$1 * 0.01);
-				obj.critRate = 'rate = ' + String(rate);
-				obj.damage.critical = true;
-			} else if (line.match(/<(?:CRITICAL RATE):[ ](\d+).(\d+)>/i)) {
-				var rate = parseFloat(String(RegExp.$1) + '.' + String(RegExp.$2));
-				obj.critRate = 'rate = ' + String(rate);
-				obj.damage.critical = true;
-			} else if (line.match(/<(?:CRITICAL MULTIPLIER):[ ](\d+)([%％])>/i)) {
-				var rate = parseFloat(RegExp.$1 * 0.01);
-				obj.critMult = 'value *= ' + String(rate) + ' + bonus;';
-				obj.damage.critical = true;
-			} else if (line.match(/<(?:CRITICAL MULTIPLIER):[ ](\d+).(\d+)>/i)) {
-				var rate = parseFloat(String(RegExp.$1) + '.' + String(RegExp.$2));
-				obj.critMult = 'value *= ' + String(rate) + ' + bonus;';
-				obj.damage.critical = true;
-			} else if (line.match(/<(?:FLAT CRITICAL):[ ](\d+)([%％])[ ](.*)>/i)) {
-				var rate = parseFloat(RegExp.$1 * 0.01);
-				var stat = String(RegExp.$3).toLowerCase();
-				obj.flatCrit = 'value += ((baseDamage > 0) ? 1 : -1)';
-				obj.flatCrit = obj.flatCrit + ' * ' + String(rate) + ' * user.';
-				obj.flatCrit = obj.flatCrit + stat + ' + bonus;'
-				obj.damage.critical = true;
-			} else if (line.match(/<(?:CRITICAL RATE FORMULA)>/i)) {
-				evalMode = 'critical rate';
-				obj.critRate = '';
-				obj.damage.critical = true;
-			} else if (line.match(/<\/(?:CRITICAL RATE FORMULA)>/i)) {
-				evalMode = 'none';
-		  } else if (line.match(/<(?:CRITICAL MULTIPLIER FORMULA)>/i)) {
-				evalMode = 'critical multiplier';
-				obj.critMult = '';
-				obj.damage.critical = true;
-			} else if (line.match(/<\/(?:CRITICAL MULTIPLIER FORMULA)>/i)) {
-				evalMode = 'none';
-			} else if (line.match(/<(?:FLAT CRITICAL FORMULA)>/i)) {
-				evalMode = 'flat critical';
-				obj.flatCrit = '';
-				obj.damage.critical = true;
-			} else if (line.match(/<\/(?:FLAT CRITICAL FORMULA)>/i)) {
-				evalMode = 'none';
-			} else {
-				if (evalMode === 'critical rate') {
-					obj.critRate = obj.critRate + line + '\n';
-				} else if (evalMode === 'critical multiplier') {
-					obj.critMult = obj.critMult + line + '\n';
-				} else if (evalMode === 'flat critical') {
-					obj.flatCrit = obj.flatCrit + line + '\n';
-				}
-			}
-		}
-	}
+    for (var i = 0; i < notedata.length; i++) {
+      var line = notedata[i];
+      if (line.match(/<(?:CRITICAL RATE):[ ](\d+)([%％])>/i)) {
+        var rate = parseFloat(RegExp.$1 * 0.01);
+        obj.critRate = 'rate = ' + String(rate);
+        obj.damage.critical = true;
+      } else if (line.match(/<(?:CRITICAL RATE):[ ](\d+).(\d+)>/i)) {
+        var rate = parseFloat(String(RegExp.$1) + '.' + String(RegExp.$2));
+        obj.critRate = 'rate = ' + String(rate);
+        obj.damage.critical = true;
+      } else if (line.match(/<(?:CRITICAL MULTIPLIER):[ ](\d+)([%％])>/i)) {
+        var rate = parseFloat(RegExp.$1 * 0.01);
+        obj.critMult = 'value *= ' + String(rate) + ' + bonus;';
+        obj.damage.critical = true;
+      } else if (line.match(/<(?:CRITICAL MULTIPLIER):[ ](\d+).(\d+)>/i)) {
+        var rate = parseFloat(String(RegExp.$1) + '.' + String(RegExp.$2));
+        obj.critMult = 'value *= ' + String(rate) + ' + bonus;';
+        obj.damage.critical = true;
+      } else if (line.match(/<(?:FLAT CRITICAL):[ ](\d+)([%％])[ ](.*)>/i)) {
+        var rate = parseFloat(RegExp.$1 * 0.01);
+        var stat = String(RegExp.$3).toLowerCase();
+        obj.flatCrit = 'value += ((baseDamage > 0) ? 1 : -1)';
+        obj.flatCrit = obj.flatCrit + ' * ' + String(rate) + ' * user.';
+        obj.flatCrit = obj.flatCrit + stat + ' + bonus;'
+        obj.damage.critical = true;
+      } else if (line.match(/<(?:CRITICAL RATE FORMULA)>/i)) {
+        evalMode = 'critical rate';
+        obj.critRate = '';
+        obj.damage.critical = true;
+      } else if (line.match(/<\/(?:CRITICAL RATE FORMULA)>/i)) {
+        evalMode = 'none';
+      } else if (line.match(/<(?:CRITICAL MULTIPLIER FORMULA)>/i)) {
+        evalMode = 'critical multiplier';
+        obj.critMult = '';
+        obj.damage.critical = true;
+      } else if (line.match(/<\/(?:CRITICAL MULTIPLIER FORMULA)>/i)) {
+        evalMode = 'none';
+      } else if (line.match(/<(?:FLAT CRITICAL FORMULA)>/i)) {
+        evalMode = 'flat critical';
+        obj.flatCrit = '';
+        obj.damage.critical = true;
+      } else if (line.match(/<\/(?:FLAT CRITICAL FORMULA)>/i)) {
+        evalMode = 'none';
+      } else {
+        if (evalMode === 'critical rate') {
+          obj.critRate = obj.critRate + line + '\n';
+        } else if (evalMode === 'critical multiplier') {
+          obj.critMult = obj.critMult + line + '\n';
+        } else if (evalMode === 'flat critical') {
+          obj.flatCrit = obj.flatCrit + line + '\n';
+        }
+      }
+    }
+  }
 };
 
 DataManager.processCritNotetags2 = function(group) {
   for (var n = 1; n < group.length; n++) {
-		var obj = group[n];
-		var notedata = obj.note.split(/[\r\n]+/);
+    var obj = group[n];
+    var notedata = obj.note.split(/[\r\n]+/);
 
-		obj.critMultBonus = 0.0;
+    obj.critMultBonus = 0.0;
     obj.flatCritBonus = 0;
-		obj.physicalCritRateBonus = 0.0;
-		obj.magicalCritRateBonus = 0.0;
-		obj.certainCritRateBonus = 0.0;
+    obj.physicalCritRateBonus = 0.0;
+    obj.magicalCritRateBonus = 0.0;
+    obj.certainCritRateBonus = 0.0;
 
-		for (var i = 0; i < notedata.length; i++) {
-			var line = notedata[i];
-			if (line.match(/<(?:CRITICAL MULTIPLIER):[ ]([\+\-]\d+)([%％])>/i)) {
-				obj.critMultBonus = parseFloat(RegExp.$1 * 0.01);
-			} else if (line.match(/<(?:FLAT CRITICAL):[ ]([\+\-]\d+)>/i)) {
-				obj.flatCritBonus = parseInt(RegExp.$1);
-			} else if
-			(line.match(/<(?:PHYSICAL CRITICAL RATE):[ ]([\+\-]\d+)([%％])>/i)) {
-				obj.physicalCritRateBonus = parseFloat(RegExp.$1 * 0.01);
-			} else if
-			(line.match(/<(?:MAGICAL CRITICAL RATE):[ ]([\+\-]\d+)([%％])>/i)) {
-				obj.magicalCritRateBonus = parseFloat(RegExp.$1 * 0.01);
-			} else if
-			(line.match(/<(?:CERTAIN HIT CRITICAL RATE):[ ]([\+\-]\d+)([%％])>/i)) {
-				obj.certainCritRateBonus = parseFloat(RegExp.$1 * 0.01);
-			}
-		}
-	}
+    for (var i = 0; i < notedata.length; i++) {
+      var line = notedata[i];
+      if (line.match(/<(?:CRITICAL MULTIPLIER):[ ]([\+\-]\d+)([%％])>/i)) {
+        obj.critMultBonus = parseFloat(RegExp.$1 * 0.01);
+      } else if (line.match(/<(?:FLAT CRITICAL):[ ]([\+\-]\d+)>/i)) {
+        obj.flatCritBonus = parseInt(RegExp.$1);
+      } else if
+      (line.match(/<(?:PHYSICAL CRITICAL RATE):[ ]([\+\-]\d+)([%％])>/i)) {
+        obj.physicalCritRateBonus = parseFloat(RegExp.$1 * 0.01);
+      } else if
+      (line.match(/<(?:MAGICAL CRITICAL RATE):[ ]([\+\-]\d+)([%％])>/i)) {
+        obj.magicalCritRateBonus = parseFloat(RegExp.$1 * 0.01);
+      } else if
+      (line.match(/<(?:CERTAIN HIT CRITICAL RATE):[ ]([\+\-]\d+)([%％])>/i)) {
+        obj.certainCritRateBonus = parseFloat(RegExp.$1 * 0.01);
+      }
+    }
+  }
 };
 
 //=============================================================================
@@ -350,19 +354,19 @@ Yanfly.Crit.BattleManager_processActionSequence =
     if (actionName === 'CRITICAL MULTIPLIER') {
       return this.actionCriticalMultiplier(actionArgs);
     }
-		// FLAT CRITICAL
+    // FLAT CRITICAL
     if (actionName === 'FLAT CRITICAL') {
       return this.actionFlatCritical(actionArgs);
     }
-		// FORCE CRITICAL
+    // FORCE CRITICAL
     if (actionName === 'FORCE CRITICAL') {
       return this.actionForceCritical();
     }
-		// FORCE NO CRITICAL
+    // FORCE NO CRITICAL
     if (actionName === 'FORCE NO CRITICAL') {
       return this.actionForceNoCritical();
     }
-		// NORMAL CRITICAL
+    // NORMAL CRITICAL
     if (actionName === 'NORMAL CRITICAL') {
       return this.actionNormalCritical();
     }
@@ -401,19 +405,19 @@ BattleManager.actionFlatCritical = function(actionArgs) {
 
 BattleManager.actionForceCritical = function(actionArgs) {
     $gameSystem._forceCritical = true;
-		$gameSystem._forceNoCritical = false;
+    $gameSystem._forceNoCritical = false;
     return true;
 };
 
 BattleManager.actionForceNoCritical = function(actionArgs) {
     $gameSystem._forceCritical = false;
-		$gameSystem._forceNoCritical = true;
+    $gameSystem._forceNoCritical = true;
     return true;
 };
 
 BattleManager.actionNormalCritical = function(actionArgs) {
     $gameSystem._forceCritical = false;
-		$gameSystem._forceNoCritical = false;
+    $gameSystem._forceNoCritical = false;
     return true;
 };
 
@@ -424,30 +428,30 @@ BattleManager.actionNormalCritical = function(actionArgs) {
 Yanfly.Crit.Game_System_rDS = Game_System.prototype.resetDamageSettings;
 Game_System.prototype.resetDamageSettings = function() {
     Yanfly.Crit.Game_System_rDS.call(this);
-		this._critMult = 1.0;
-		this._flatCrit = 0;
-		this._forceCritical = false;
-		this._forceNoCritical = false;
+    this._critMult = 1.0;
+    this._flatCrit = 0;
+    this._forceCritical = false;
+    this._forceNoCritical = false;
 };
 
 Game_System.prototype.criticalMultiplier = function() {
-		if (this._critMult === undefined) this.resetDamageSettings();
-		return this._critMult;
+    if (this._critMult === undefined) this.resetDamageSettings();
+    return this._critMult;
 };
 
 Game_System.prototype.flatCritical = function() {
-		if (this._flatCrit === undefined) this.resetDamageSettings();
-		return this._flatCrit;
+    if (this._flatCrit === undefined) this.resetDamageSettings();
+    return this._flatCrit;
 };
 
 Game_System.prototype.forceCritical = function() {
-		if (this._forceCritical === undefined) this.resetDamageSettings();
-		return this._forceCritical;
+    if (this._forceCritical === undefined) this.resetDamageSettings();
+    return this._forceCritical;
 };
 
 Game_System.prototype.forceNoCritical = function() {
-		if (this._forceNoCritical === undefined) this.resetDamageSettings();
-		return this._forceNoCritical;
+    if (this._forceNoCritical === undefined) this.resetDamageSettings();
+    return this._forceNoCritical;
 };
 
 //=============================================================================
@@ -455,48 +459,48 @@ Game_System.prototype.forceNoCritical = function() {
 //=============================================================================
 
 Game_Battler.prototype.criticalMultiplierBonus = function() {
-		multiplier = 0.0;
-		for (var i = 0; i < this.states().length; ++i) {
+    multiplier = 0.0;
+    for (var i = 0; i < this.states().length; ++i) {
       var state = this.states()[i];
       if (state) multiplier += state.critMultBonus;
     }
-		return Math.max(0, multiplier);
+    return Math.max(0, multiplier);
 };
 
 Game_Battler.prototype.flatCriticalBonus = function() {
-		value = 0;
-		for (var i = 0; i < this.states().length; ++i) {
+    value = 0;
+    for (var i = 0; i < this.states().length; ++i) {
       var state = this.states()[i];
       if (state) value += state.flatCritBonus;
     }
-		return value;
+    return value;
 };
 
 Game_Battler.prototype.certainCritRateBonus = function() {
-		multiplier = 0.0;
-		for (var i = 0; i < this.states().length; ++i) {
+    multiplier = 0.0;
+    for (var i = 0; i < this.states().length; ++i) {
       var state = this.states()[i];
       if (state) multiplier += state.certainCritRateBonus;
     }
-		return Math.max(0, multiplier);
+    return Math.max(0, multiplier);
 };
 
 Game_Battler.prototype.physicalCritRateBonus = function() {
-		multiplier = 0.0;
-		for (var i = 0; i < this.states().length; ++i) {
+    multiplier = 0.0;
+    for (var i = 0; i < this.states().length; ++i) {
       var state = this.states()[i];
       if (state) multiplier += state.physicalCritRateBonus;
     }
-		return Math.max(0, multiplier);
+    return Math.max(0, multiplier);
 };
 
 Game_Battler.prototype.magicalCritRateBonus = function() {
-		multiplier = 0.0;
-		for (var i = 0; i < this.states().length; ++i) {
+    multiplier = 0.0;
+    for (var i = 0; i < this.states().length; ++i) {
       var state = this.states()[i];
       if (state) multiplier += state.physicalCritRateBonus;
     }
-		return Math.max(0, multiplier);
+    return Math.max(0, multiplier);
 };
 
 //=============================================================================
@@ -504,58 +508,58 @@ Game_Battler.prototype.magicalCritRateBonus = function() {
 //=============================================================================
 
 Game_Actor.prototype.criticalMultiplierBonus = function() {
-		multiplier = Game_Battler.prototype.criticalMultiplierBonus.call(this);
-		multiplier += this.actor().critMultBonus;
-		multiplier += this.currentClass().critMultBonus;
-		for (var i = 0; i < this.equips().length; ++i) {
+    multiplier = Game_Battler.prototype.criticalMultiplierBonus.call(this);
+    multiplier += this.actor().critMultBonus;
+    multiplier += this.currentClass().critMultBonus;
+    for (var i = 0; i < this.equips().length; ++i) {
       var equip = this.equips()[i];
       if (equip) multiplier += equip.critMultBonus;
     }
-		return multiplier;
+    return multiplier;
 };
 
 Game_Actor.prototype.flatCriticalBonus = function() {
-		value = Game_Battler.prototype.flatCriticalBonus.call(this);
-		value += this.actor().flatCritBonus;
-		value += this.currentClass().flatCritBonus;
-		for (var i = 0; i < this.equips().length; ++i) {
-			var equip = this.equips()[i];
-			if (equip) value += equip.flatCritBonus;
-		}
-		return value;
+    value = Game_Battler.prototype.flatCriticalBonus.call(this);
+    value += this.actor().flatCritBonus;
+    value += this.currentClass().flatCritBonus;
+    for (var i = 0; i < this.equips().length; ++i) {
+      var equip = this.equips()[i];
+      if (equip) value += equip.flatCritBonus;
+    }
+    return value;
 };
 
 Game_Actor.prototype.certainCritRateBonus = function() {
-		multiplier = Game_Battler.prototype.certainCritRateBonus.call(this);
-		multiplier += this.actor().certainCritRateBonus;
-		multiplier += this.currentClass().certainCritRateBonus;
-		for (var i = 0; i < this.equips().length; ++i) {
+    multiplier = Game_Battler.prototype.certainCritRateBonus.call(this);
+    multiplier += this.actor().certainCritRateBonus;
+    multiplier += this.currentClass().certainCritRateBonus;
+    for (var i = 0; i < this.equips().length; ++i) {
       var equip = this.equips()[i];
       if (equip) multiplier += equip.certainCritRateBonus;
     }
-		return multiplier;
+    return multiplier;
 };
 
 Game_Actor.prototype.physicalCritRateBonus = function() {
-		multiplier = Game_Battler.prototype.physicalCritRateBonus.call(this);
-		multiplier += this.actor().physicalCritRateBonus;
-		multiplier += this.currentClass().physicalCritRateBonus;
-		for (var i = 0; i < this.equips().length; ++i) {
+    multiplier = Game_Battler.prototype.physicalCritRateBonus.call(this);
+    multiplier += this.actor().physicalCritRateBonus;
+    multiplier += this.currentClass().physicalCritRateBonus;
+    for (var i = 0; i < this.equips().length; ++i) {
       var equip = this.equips()[i];
       if (equip) multiplier += equip.physicalCritRateBonus;
     }
-		return multiplier;
+    return multiplier;
 };
 
 Game_Actor.prototype.magicalCritRateBonus = function() {
-		multiplier = Game_Battler.prototype.magicalCritRateBonus.call(this);
-		multiplier += this.actor().magicalCritRateBonus;
-		multiplier += this.currentClass().magicalCritRateBonus;
-		for (var i = 0; i < this.equips().length; ++i) {
+    multiplier = Game_Battler.prototype.magicalCritRateBonus.call(this);
+    multiplier += this.actor().magicalCritRateBonus;
+    multiplier += this.currentClass().magicalCritRateBonus;
+    for (var i = 0; i < this.equips().length; ++i) {
       var equip = this.equips()[i];
       if (equip) multiplier += equip.magicalCritRateBonus;
     }
-		return multiplier;
+    return multiplier;
 };
 
 //=============================================================================
@@ -563,33 +567,33 @@ Game_Actor.prototype.magicalCritRateBonus = function() {
 //=============================================================================
 
 Game_Enemy.prototype.criticalMultiplierBonus = function() {
-		multiplier = Game_Battler.prototype.criticalMultiplierBonus.call(this);
-		multiplier += this.enemy().critMultBonus;
-		return multiplier;
+    multiplier = Game_Battler.prototype.criticalMultiplierBonus.call(this);
+    multiplier += this.enemy().critMultBonus;
+    return multiplier;
 };
 
 Game_Enemy.prototype.flatCriticalBonus = function() {
-		value = Game_Battler.prototype.flatCriticalBonus.call(this);
-		value += this.enemy().flatCritBonus;
-		return value;
+    value = Game_Battler.prototype.flatCriticalBonus.call(this);
+    value += this.enemy().flatCritBonus;
+    return value;
 };
 
 Game_Enemy.prototype.certainCritRateBonus = function() {
-		multiplier = Game_Battler.prototype.certainCritRateBonus.call(this);
-		multiplier += this.enemy().certainCritRateBonus;
-		return multiplier;
+    multiplier = Game_Battler.prototype.certainCritRateBonus.call(this);
+    multiplier += this.enemy().certainCritRateBonus;
+    return multiplier;
 };
 
 Game_Enemy.prototype.physicalCritRateBonus = function() {
-		multiplier = Game_Battler.prototype.physicalCritRateBonus.call(this);
-		multiplier += this.enemy().physicalCritRateBonus;
-		return multiplier;
+    multiplier = Game_Battler.prototype.physicalCritRateBonus.call(this);
+    multiplier += this.enemy().physicalCritRateBonus;
+    return multiplier;
 };
 
 Game_Enemy.prototype.magicalCritRateBonus = function() {
-		multiplier = Game_Battler.prototype.magicalCritRateBonus.call(this);
-		multiplier += this.enemy().magicalCritRateBonus;
-		return multiplier;
+    multiplier = Game_Battler.prototype.magicalCritRateBonus.call(this);
+    multiplier += this.enemy().magicalCritRateBonus;
+    return multiplier;
 };
 
 //=============================================================================
@@ -597,27 +601,32 @@ Game_Enemy.prototype.magicalCritRateBonus = function() {
 //=============================================================================
 
 Game_Action.prototype.itemCri = function(target) {
-		if (!this.item().damage.critical) return 0;
-		var user = this.subject();
-		var rate = this.applyItemCriticalRate(target);
-		if (this.isCertainHit()) rate += user.certainCritRateBonus();
-		if (this.isPhysical()) rate += user.physicalCritRateBonus();
-		if (this.isMagical()) rate += user.magicalCritRateBonus();
-		return rate;
+    if (!this.item().damage.critical) return 0;
+    var user = this.subject();
+    var rate = this.applyItemCriticalRate(target);
+    if (this.isCertainHit()) rate += user.certainCritRateBonus();
+    if (this.isPhysical()) rate += user.physicalCritRateBonus();
+    if (this.isMagical()) rate += user.magicalCritRateBonus();
+    return rate;
 };
 
 Game_Action.prototype.applyItemCriticalRate = function(target) {
-		var item = this.item();
-		var a = this.subject();
-		var b = target;
-		var user = this.subject();
-		var subject = this.subject();
-		var s = $gameSwitches._data;
-		var v = $gameVariables._data;
-		var rate = 0;
-		var bonus = user.criticalMultiplierBonus();
-		eval(item.critRate);
-		return rate;
+    var item = this.item();
+    var a = this.subject();
+    var b = target;
+    var user = this.subject();
+    var subject = this.subject();
+    var s = $gameSwitches._data;
+    var v = $gameVariables._data;
+    var rate = 0;
+    var bonus = user.criticalMultiplierBonus();
+    var code = item.critRate;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'CRITICAL RATE FORMULA ERROR');
+    }
+    return rate;
 };
 
 Game_Action.prototype.applyCritical = function(value) {
@@ -626,60 +635,87 @@ Game_Action.prototype.applyCritical = function(value) {
 
 Yanfly.Crit.Game_Action_applyCritRate = Game_Action.prototype.applyCriticalRate;
 Game_Action.prototype.applyCriticalRate = function(value, baseDamage, target) {
-    value =	Yanfly.Crit.Game_Action_applyCritRate.call(this, value, baseDamage,
-				target);
-		value = this.applyItemCriticalMult(value, baseDamage, target);
-		value *= $gameSystem.criticalMultiplier();
+    value = Yanfly.Crit.Game_Action_applyCritRate.call(this, value, baseDamage,
+        target);
+    value = this.applyItemCriticalMult(value, baseDamage, target);
+    value *= $gameSystem.criticalMultiplier();
     return value;
 };
 
 Yanfly.Crit.Game_Action_modifyCrit = Game_Action.prototype.modifyCritical;
 Game_Action.prototype.modifyCritical = function(critical, baseDamage, target) {
     critical = Yanfly.Crit.Game_Action_modifyCrit.call(this, critical,
-			baseDamage, target);
-		if ($gameSystem.forceCritical()) critical = true;
-		if ($gameSystem.forceNoCritical()) critical = false;
-		return critical;
+      baseDamage, target);
+    if ($gameSystem.forceCritical()) critical = true;
+    if ($gameSystem.forceNoCritical()) critical = false;
+    return critical;
 };
 
 Game_Action.prototype.applyItemCriticalMult =
   function(value, baseDamage, target) {
-  	var item = this.item();
-  	var a = this.subject();
-  	var b = target;
-  	var user = this.subject();
-  	var subject = this.subject();
-  	var s = $gameSwitches._data;
-  	var v = $gameVariables._data;
-  	var bonus = user.criticalMultiplierBonus();
-  	eval(item.critMult);
-  	return value;
+    var item = this.item();
+    var a = this.subject();
+    var b = target;
+    var user = this.subject();
+    var subject = this.subject();
+    var s = $gameSwitches._data;
+    var v = $gameVariables._data;
+    var bonus = user.criticalMultiplierBonus();
+    var code = item.critMult;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'CRITICAL MULTIPLIER ERROR');
+    }
+    return value;
 };
 
 Yanfly.Crit.Game_Acion_applyFlatCrit = Game_Action.prototype.applyFlatCritical;
 Game_Action.prototype.applyFlatCritical = function(value, baseDamage, target) {
-    value =	Yanfly.Crit.Game_Acion_applyFlatCrit.call(this, value,
-				baseDamage, target);
-		value = this.applyItemFlatCrit(value, baseDamage, target);
-		if (baseDamage > 0) {
-			value += $gameSystem.flatCritical();
-		} else if (baseDamage < 0) {
-			value -= $gameSystem.flatCritical();
-		}
-		return value;
+    value = Yanfly.Crit.Game_Acion_applyFlatCrit.call(this, value,
+        baseDamage, target);
+    value = this.applyItemFlatCrit(value, baseDamage, target);
+    if (baseDamage > 0) {
+      value += $gameSystem.flatCritical();
+    } else if (baseDamage < 0) {
+      value -= $gameSystem.flatCritical();
+    }
+    return value;
 };
 
 Game_Action.prototype.applyItemFlatCrit = function(value, baseDamage, target) {
-  	var item = this.item();
-  	var a = this.subject();
-  	var b = target;
-  	var user = this.subject();
-  	var subject = this.subject();
-  	var s = $gameSwitches._data;
-  	var v = $gameVariables._data;
-  	var bonus = user.flatCriticalBonus();
-  	eval(item.flatCrit);
-  	return value;
+    var item = this.item();
+    var a = this.subject();
+    var b = target;
+    var user = this.subject();
+    var subject = this.subject();
+    var s = $gameSwitches._data;
+    var v = $gameVariables._data;
+    var bonus = user.flatCriticalBonus();
+    var code = item.flatCrit;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'CRITICAL FLAT BONUS ERROR');
+    }
+    return value;
+};
+
+//=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

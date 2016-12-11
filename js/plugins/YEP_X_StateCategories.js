@@ -8,10 +8,11 @@ Imported.YEP_X_StateCategories = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.StC = Yanfly.StC || {};
+Yanfly.StC.version = 1.05;
 
 //=============================================================================
  /*:
- * @plugindesc v1.04 (Requires YEP_BuffsStatesCore.js) Sets up categories
+ * @plugindesc v1.05 (Requires YEP_BuffsStatesCore.js) Sets up categories
  * for your states to make control over them easier.
  * @author Yanfly Engine Plugins
  *
@@ -120,6 +121,9 @@ Yanfly.StC = Yanfly.StC || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.05:
+ * - Lunatic Mode fail safes added.
  *
  * Version 1.04:
  * - Compatibility update with Selection Control to not game over the player
@@ -318,7 +322,11 @@ Game_Battler.prototype.removeStateCategoryEval = function(value, obj, c, user) {
     var target = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(formula);
+    try {
+      eval(formula);
+    } catch (e) {
+      Yanfly.Util.displayError(e, formula, 'REMOVE STATE CATEGORY ERROR');
+    }
     return value;
 };
 
@@ -428,6 +436,23 @@ Game_Action.prototype.applyItemUserEffect = function(target) {
 
 Game_Action.prototype.applyStateCategoryRemovalEffect = function(target) {
   target.removeStateCategoryEffect(this.item(), this.subject());
+};
+
+//=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

@@ -8,10 +8,11 @@ Imported.YEP_X_LimitedSkillUses = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.LSU = Yanfly.LSU || {};
+Yanfly.LSU.version = 1.04;
 
 //=============================================================================
  /*:
- * @plugindesc v1.03 (Requires YEP_SkillCore.js) Make certain skills have
+ * @plugindesc v1.04 (Requires YEP_SkillCore.js) Make certain skills have
  * a limited amount of times they can be used in battle.
  * @author Yanfly Engine Plugins
  *
@@ -272,6 +273,9 @@ Yanfly.LSU = Yanfly.LSU || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.04:
+ * - Lunatic Mode fail safes added.
  *
  * Version 1.03:
  * - Compatibility update with Equip Battle Skills and Equip Skill Tiers.
@@ -603,12 +607,29 @@ Game_BattlerBase.prototype.getObjLimitUseMaxEval = function(obj, skill, value) {
   var target = this;
   var s = $gameSwitches._data;
   var v = $gameVariables._data;
-  if (obj.globalUseMaxEval !== '') eval(obj.globalUseMaxEval);
+  if (obj.globalUseMaxEval !== '') {
+    var code = obj.globalUseMaxEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'LIMITED USE GLOBAL ERROR');
+    }
+  }
   if (obj.stypeUseMaxEval[skill.stypeId]) {
-    eval(obj.stypeUseMaxEval[skill.stypeId]);
+    var code = obj.stypeUseMaxEval[skill.stypeId];
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'LIMITED USE STYPE ERROR');
+    }
   }
   if (obj.skillUseMaxEval[skill.id]) {
-    eval(obj.skillUseMaxEval[skill.id]);
+    var code = obj.skillUseMaxEval[skill.id];
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'LIMITED USE SKILL ERROR');
+    }
   }
   return value;
 };
@@ -736,12 +757,29 @@ Game_Battler.prototype.getAltLimitUseEval = function(obj, user, skill, value) {
   var target = this;
   var s = $gameSwitches._data;
   var v = $gameVariables._data;
-  if (obj.globalLimitedUsesEval !== '') eval(obj.globalLimitedUsesEval);
+  if (obj.globalLimitedUsesEval !== '') {
+    var code = obj.globalLimitedUsesEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'GLOBAL LIMITED USES EVAL ERROR');
+    }
+  }
   if (obj.stypeLimitedUsesEval[skill.stypeId]) {
-    eval(obj.stypeLimitedUsesEval[skill.stypeId]);
+    var code = obj.stypeLimitedUsesEval[skill.stypeId];
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'LIMITED USES STYPE EVAL ERROR');
+    }
   }
   if (obj.skillLimitedUsesEval[skill.id]) {
-    eval(obj.skillLimitedUsesEval[skill.id]);
+    var code = obj.skillLimitedUsesEval[skill.id];
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'LIMITED USES SKILL EVAL ERROR');
+    }
   }
   return value;
 };
@@ -907,6 +945,17 @@ if (!Yanfly.Util.toGroup) {
     Yanfly.Util.toGroup = function(inVal) {
         return inVal;
     }
+};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

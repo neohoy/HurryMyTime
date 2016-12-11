@@ -8,10 +8,11 @@ Imported.YEP_BattleStatusWindow = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.BSW = Yanfly.BSW || {};
+Yanfly.BSW.version = 1.07;
 
 //=============================================================================
  /*:
- * @plugindesc v1.06 A simple battle status window that shows the
+ * @plugindesc v1.07 A simple battle status window that shows the
  * faces of your party members in horizontal format.
  * @author Yanfly Engine Plugins
  *
@@ -107,6 +108,9 @@ Yanfly.BSW = Yanfly.BSW || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.07:
+ * - Optimization update.
+ *
  * Version 1.06:
  * - Fixed a bug that prevented animations from using flashes on the actor
  * sprite if they were visible from front view.
@@ -151,6 +155,7 @@ Yanfly.Param.BSWNameFontSize = Number(Yanfly.Parameters['Name Font Size']);
 Yanfly.Param.BSWParamFontSize = Number(Yanfly.Parameters['Param Font Size']);
 Yanfly.Param.BSWParamYBuffer = Number(Yanfly.Parameters['Param Y Buffer']);
 Yanfly.Param.BSWCurrentMax = String(Yanfly.Parameters['Param Current Max']);
+Yanfly.Param.BSWCurrentMax = eval(Yanfly.Param.BSWCurrentMax);
 Yanfly.Param.BSWAdjustCol = eval(String(Yanfly.Parameters['Adjust Columns']));
 
 Yanfly.Param.BSWLfRt = eval(String(Yanfly.Parameters['Left / Right']));
@@ -274,7 +279,7 @@ Sprite_Actor.prototype.setActorHome = function(index) {
 
 Sprite_Actor.prototype.setActorHomeFrontView = function(index) {
     if (Imported.YEP_BattleEngineCore) {
-      var statusHeight = eval(Yanfly.Param.BECCommandRows);
+      var statusHeight = Yanfly.Param.BECCommandRows;
     } else {
       var statusHeight = 4;
     }
@@ -401,7 +406,7 @@ Window_ActorCommand.prototype.processCancel = function() {
 
 Window_BattleStatus.prototype.createContents = function() {
     this.createFaceContents();
-    this._currentMax = eval(Yanfly.Param.BSWCurrentMax);
+    this._currentMax = Yanfly.Param.BSWCurrentMax;
     Window_Selectable.prototype.createContents.call(this);
 };
 

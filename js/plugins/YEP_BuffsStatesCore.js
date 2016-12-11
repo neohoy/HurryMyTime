@@ -8,10 +8,11 @@ Imported.YEP_BuffsStatesCore = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.BSC = Yanfly.BSC || {};
+Yanfly.BSC.version = 1.12;
 
 //=============================================================================
  /*:
- * @plugindesc v1.11 Alter the basic mechanics behind buffs and states
+ * @plugindesc v1.12 Alter the basic mechanics behind buffs and states
  * that aren't adjustable within the RPG Maker editor.
  * @author Yanfly Engine Plugins
  *
@@ -558,6 +559,9 @@ Yanfly.BSC = Yanfly.BSC || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.12:
+ * - Lunatic Mode fail safes added.
  *
  * Version 1.11:
  * - Fixed a bug involving Lunatic state effects not occuring in the right
@@ -1110,7 +1114,7 @@ Game_BattlerBase.prototype.stateTurns = function(stateId) {
 };
 
 Game_BattlerBase.prototype.setStateTurns = function(stateId, turns) {
-    if (Imported.YEP_BattleEngineCore && !eval(Yanfly.Param.BECTimeStates)) {
+    if (Imported.YEP_BattleEngineCore && !Yanfly.Param.BECTimeStates) {
       turns = Math.floor(turns);
     }
     this._stateTurns[stateId] = turns;
@@ -1121,7 +1125,7 @@ Game_BattlerBase.prototype.buffTurns = function(paramId) {
 };
 
 Game_BattlerBase.prototype.setBuffTurns = function(paramId, turns) {
-    if (Imported.YEP_BattleEngineCore && !eval(Yanfly.Param.BECTimeBuffs)) {
+    if (Imported.YEP_BattleEngineCore && !Yanfly.Param.BECTimeBuffs) {
       turns = Math.floor(turns);
     }
     this._buffTurns[paramId] = turns;
@@ -1132,7 +1136,13 @@ Game_BattlerBase.prototype.paramBuffRate = function(paramId) {
     if (this._cacheParamBuffRate[paramId] !== undefined) {
       return this._cacheParamBuffRate[paramId];
     }
-    var rate = eval(Yanfly.Param.BSCBuffFormula);
+    var code = Yanfly.Param.BSCBuffFormula;
+    try {
+      var rate = eval(code);
+    } catch (e) {
+      var rate = 1;
+      Yanfly.Util.displayError(e, code, 'PARAM BUFF RATE FORMULA ERROR');
+    }
     this._cacheParamBuffRate[paramId] = rate;
     return this._cacheParamBuffRate[paramId];
 };
@@ -1255,6 +1265,10 @@ Game_BattlerBase.prototype.statesAndBuffs = function() {
 // Game_Battler
 //=============================================================================
 
+Game_Battler.prototype.hasState = function(stateId) {
+    return this.states().contains($dataStates[stateId]);
+};
+
 Game_Battler.prototype.customEffectEval = function(stateId, type) {
     var state = $dataStates[stateId];
     if (!state) return;
@@ -1265,7 +1279,13 @@ Game_Battler.prototype.customEffectEval = function(stateId, type) {
     var origin = this.stateOrigin(stateId);
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(state.customEffectEval[type]);
+    var code = state.customEffectEval[type];
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 
+        'CUSTOM STATE ' + stateId + ' CODE ERROR');
+    }
 };
 
 Yanfly.BSC.Game_Battler_addState = Game_Battler.prototype.addState;
@@ -1560,7 +1580,12 @@ Game_Action.prototype.applyBuffTurnsEval = function(turn, paramId, target) {
     var user = this.subject();
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(this.item().modifyTurnBuffEval[paramId]);
+    var code = this.item().modifyTurnBuffEval[paramId];
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'CUSTOM BUFF TURN SET ERROR');
+    }
     return turn;
 };
 
@@ -1586,7 +1611,12 @@ Game_Action.prototype.applyDebuffTurnsEval = function(turn, paramId, target) {
     var user = this.subject();
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(this.item().modifyTurnBuffEval[paramId]);
+    var code = this.item().modifyTurnBuffEval[paramId];
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'CUSTOM DEBUFF TURN SET ERROR');
+    }
     return turn;
 };
 
@@ -1624,7 +1654,12 @@ Game_Action.prototype.applyStateTurnsEval = function(turn, stateId, target) {
     var origin = target.stateOrigin(stateId);
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(this.item().modifyTurnStateEval[stateId]);
+    var code = this.item().modifyTurnStateEval[stateId];
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'CUSTOM STATE TURN SET ERROR');
+    }
     return turn;
 };
 
@@ -1650,7 +1685,13 @@ function(target, stateId, type, side, value) {
     var origin = side.stateOrigin(stateId);
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(state.customEffectEval[type]);
+    var code = state.customEffectEval[type];
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code,
+        'CUSTOM STATE ' + stateId + ' CODE ERROR');
+    }
     return value;
 };
 
@@ -2046,6 +2087,17 @@ if (!Yanfly.Util.toGroup) {
     Yanfly.Util.toGroup = function(inVal) {
         return inVal;
     }
+};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

@@ -8,11 +8,11 @@ Imported.YEP_EnhancedTP = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.ETP = Yanfly.ETP || {};
-Yanfly.ETP.version = 1.05;
+Yanfly.ETP.version = 1.06;
 
 //=============================================================================
  /*:
- * @plugindesc v1.05 Gives you more control over how TP is handled in
+ * @plugindesc v1.06 Gives you more control over how TP is handled in
  * your game in addition to letting players switch TP modes.
  * @author Yanfly Engine Plugins
  *
@@ -2600,6 +2600,9 @@ Yanfly.ETP.version = 1.05;
  * Changelog
  * ============================================================================
  *
+ * Version 1.06:
+ * - Lunatic Mode fail safes added.
+ *
  * Version 1.05:
  * - Added 'Dead TP Gain' plugin parameter. Enabling this will allow dead
  * actors to gain TP from TP modes while in battle. Disabling this will prevent
@@ -2944,7 +2947,13 @@ Game_BattlerBase.prototype.getTpEval = function(evalMode, user, target, value) {
     var subject = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    var tpGain = eval(this.tpMode()[evalMode]);
+    var formula = this.tpMode()[evalMode];
+    try {
+      var tpGain = eval(formula);
+    } catch (e) {
+      var tpGain = 0;
+      Yanfly.Util.displayError(e, formula, 'CUSTOM TP MODE GAIN FORMUAL ERROR');
+    }
     return Math.floor(parseInt(tpGain));
 };
 
@@ -3442,6 +3451,17 @@ Yanfly.Util.getRange = function(n, m) {
 
 Yanfly.Util.onlyUnique = function(value, index, self) {
     return self.indexOf(value) === index;
+};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

@@ -8,10 +8,11 @@ Imported.YEP_X_CounterControl = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.Counter = Yanfly.Counter || {};
+Yanfly.Counter.version = 1.07;
 
 //=============================================================================
  /*:
- * @plugindesc v1.06 (Requires YEP_BattleEngineCore.js) Gives you more
+ * @plugindesc v1.07 (Requires YEP_BattleEngineCore.js) Gives you more
  * control over how counters work in RPG Maker MV!
  * @author Yanfly Engine Plugins
  *
@@ -668,6 +669,9 @@ Yanfly.Counter = Yanfly.Counter || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.07:
+ * - Lunatic Mode fail safes added.
  * 
  * Version 1.06:
  * - Updated for RPG Maker MV version 1.3.2.
@@ -1073,7 +1077,12 @@ BattleManager.meetCounterConditionsEval = function(skill, subject, target) {
     var item = skill;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(this._action.item().counterConditionEval);
+    var code = this._action.item().counterConditionEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'COUNTER CONDITIONS EVAL ERROR');
+    }
     return condition;
 };
 
@@ -1198,7 +1207,13 @@ BattleManager.checkCounterEval = function(code, skill, subject, target) {
     var item = skill;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    return eval(code);
+    var code = line;
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'COUNTER CHECK ERROR');
+      return false;
+    }
 };
 
 BattleManager.checkCounterHitType = function(value) {
@@ -1495,7 +1510,12 @@ Game_Battler.prototype.extendCounterSkillsEval = function(obj) {
     var target = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(obj.counterSkillsEval);
+    var code = obj.counterSkillsEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'COUNTER SKILLS ERROR');
+    }
     Yanfly.Util.extend(this._counterSkills, obj.counterSkills);
 };
 
@@ -1536,7 +1556,12 @@ Game_Battler.prototype.getCounterTotalEval = function(obj) {
     var target = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(obj.counterTotalEval);
+    var code = obj.counterTotalEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'COUNTER TOTAL ERROR');
+    }
     return value;
 };
 
@@ -1593,7 +1618,12 @@ Game_Battler.prototype.getTargetCntRateEval = function(obj, rate, trg, item) {
     var target = trg;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(obj.targetCounterRateEval);
+    var code = obj.targetCounterRateEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'TARGET COUNTER RATE ERROR');
+    }
     return rate;
 };
 
@@ -1839,7 +1869,12 @@ Game_Action.prototype.customCounterRateEval = function(rate, target) {
     var b = target;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(this.item().counterRateEval);
+    var code = this.item().counterRateEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'COUNTER RATE ERROR');
+    }
     return rate;
 };
 
@@ -1898,6 +1933,17 @@ Yanfly.Util.extend = function (mainArray, otherArray) {
       mainArray.push(i)
     }, this);
 }
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
+};
 
 //=============================================================================
 // End of File

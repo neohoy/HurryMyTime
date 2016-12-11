@@ -8,11 +8,11 @@ Imported.YEP_X_PartyLimitGauge = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.PLG = Yanfly.PLG || {};
-Yanfly.PLG.version = 1.08;
+Yanfly.PLG.version = 1.09;
 
 //=============================================================================
  /*:
- * @plugindesc v1.08 (Requires YEP_SkillCore.js) A party-wide skill
+ * @plugindesc v1.09 (Requires YEP_SkillCore.js) A party-wide skill
  * resource is accessible across all members of a unit.
  * @author Yanfly Engine Plugins
  *
@@ -488,6 +488,9 @@ Yanfly.PLG.version = 1.08;
  * Changelog
  * ============================================================================
  *
+ * Version 1.09:
+ * - Lunatic Mode fail safes added.
+ *
  * Version 1.08:
  * - Calculations for Party Limit Gauge increasing for HP and MP values are now
  * calculated based on the actual HP and MP damage taken as per the results
@@ -780,7 +783,12 @@ Game_BattlerBase.prototype.partyLimitCost = function(skill) {
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
     cost += Math.ceil(increments * skill.partyLimitCostPer);
-    eval(skill.partyLimitCostEval);
+    var code = skill.partyLimitCostEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'PARTY LIMIT COST ERROR');
+    }
     return Math.ceil(cost * this.partyLimitCostRate());
 };
 
@@ -893,7 +901,13 @@ Game_Actor.prototype.basePartyLimitGaugeMax = function() {
     var subject = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    return eval(this.actor().partyLimitGaugeMax);
+    var code = this.actor().partyLimitGaugeMax;
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'BASE PARTY LIMIT GAUGE FORMULA ERROR');
+      return 0;
+    }
 };
 
 Game_Actor.prototype.partyLimitGaugeMaxPlus = function() {
@@ -933,7 +947,13 @@ Game_Enemy.prototype.basePartyLimitGaugeMax = function() {
     var subject = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    return eval(this.enemy().partyLimitGaugeMax);
+    var code = this.enemy().partyLimitGaugeMax;
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'PARTY LIMIT GAUGE FORMULA MAX ERROR');
+      return 0;
+    }
 };
 
 Game_Enemy.prototype.partyLimitGaugeMaxPlus = function() {
@@ -1016,7 +1036,11 @@ Game_Action.prototype.partyGaugeGainEval = function(f1, c1, c2, value) {
     var defender = c2;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(f1);
+    try {
+      eval(f1);
+    } catch (e) {
+      Yanfly.Util.displayError(e, f1, 'PARTY GAUGE GAIN EVAL ERROR');
+    }
     return value;
 };
 
@@ -1160,7 +1184,12 @@ Game_Unit.prototype.processPartyLimitGaugeEval = function(f1, c1, c2, c3, dmg) {
     var damage = dmg;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    var value = eval(f1);
+    try {
+      var value = eval(f1);
+    } catch (e) {
+      Yanfly.Util.displayError(e, f1, 'PARTY LIMIT GAUGE GAIN ERROR');
+      var value = 0;
+    }
     this.gainPartyLimitGauge(value)
 };
 
@@ -1224,12 +1253,18 @@ Game_Party.prototype.resetPartyLimitGauge = function() {
 };
 
 Game_Party.prototype.partyLimitGaugeMaxBonus = function() {
-    if (this._partyLimitGaugeMaxBonus === undefined) {
-      var s = $gameSwitches._data;
-      var v = $gameVariables._data;
-      this._partyLimitGaugeMaxBonus = eval(Yanfly.Param.PLGPartyBonus);
+  if (this._partyLimitGaugeMaxBonus === undefined) {
+    var s = $gameSwitches._data;
+    var v = $gameVariables._data;
+    var code = Yanfly.Param.PLGPartyBonus;
+    try {
+      this._partyLimitGaugeMaxBonus = eval(code);
+    } catch (e) {
+      this._partyLimitGaugeMaxBonus = 0;
+      Yanfly.Util.displayError(e, code, 'PARTY LIMIT GAUGE MAX ERROR');
     }
-    return this._partyLimitGaugeMaxBonus;
+  }
+  return this._partyLimitGaugeMaxBonus;
 };
 
 //=============================================================================
@@ -1277,12 +1312,18 @@ Game_Troop.prototype.partyLimitGaugeBufferY = function() {
 };
 
 Game_Troop.prototype.partyLimitGaugeMaxBonus = function() {
-    if (this._partyLimitGaugeMaxBonus === undefined) {
-      var s = $gameSwitches._data;
-      var v = $gameVariables._data;
-      this._partyLimitGaugeMaxBonus = eval(Yanfly.Param.PLGTroopBonus);
+  if (this._partyLimitGaugeMaxBonus === undefined) {
+    var s = $gameSwitches._data;
+    var v = $gameVariables._data;
+    var code = Yanfly.Param.PLGTroopBonus;
+    try {
+      this._partyLimitGaugeMaxBonus = eval(code);
+    } catch (e) {
+      this._partyLimitGaugeMaxBonus = 0;
+      Yanfly.Util.displayError(e, code, 'PARTY LIMIT GAUGE MAX BONUS ERROR');
     }
-    return this._partyLimitGaugeMaxBonus;
+  }
+  return this._partyLimitGaugeMaxBonus;
 };
 
 //=============================================================================
@@ -1407,7 +1448,7 @@ Window_PartyLimitGauge.prototype.initialize = function(unit) {
     var ww = this.windowWidth();
     var wh = this.windowHeight();
     if (Imported.YEP_BattleEngineCore) {
-      this._lowerWindows = eval(Yanfly.Param.BECLowerWindows);
+      this._lowerWindows = Yanfly.Param.BECLowerWindows;
     } else {
       this._lowerWindows = false;
     }
@@ -1435,7 +1476,7 @@ Window_PartyLimitGauge.prototype.getPositionX = function() {
 
 Window_PartyLimitGauge.prototype.getPositionY = function() {
     if (Imported.YEP_BattleEngineCore) {
-      var statusHeight = eval(Yanfly.Param.BECCommandRows);
+      var statusHeight = Yanfly.Param.BECCommandRows;
     } else {
       var statusHeight = 4;
     }
@@ -1558,6 +1599,17 @@ if (!Yanfly.Util.toGroup) {
     Yanfly.Util.toGroup = function(inVal) {
         return inVal;
     }
+};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

@@ -8,10 +8,11 @@ Imported.YEP_WeaponUnleash = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.WUL = Yanfly.WUL || {};
+Yanfly.WUL.version = 1.04;
 
 //=============================================================================
  /*:
- * @plugindesc v1.02 Replace the Attack command or give it the option of
+ * @plugindesc v1.04 Replace the Attack command or give it the option of
  * have a skill randomly occur when using it!
  * @author Yanfly Engine Plugins
  *
@@ -252,6 +253,12 @@ Yanfly.WUL = Yanfly.WUL || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.04:
+ * - Bug fixed for replaced attacks that do not have a selection target.
+ *
+ * Version 1.03:
+ * - Lunatic Mode fail safes added.
+ *
  * Verison 1.02:
  * - If a battler is afflicted with berserk, charm, or confusion and they use a
  * scope other than a single target action, the scope will now be adjusted to
@@ -478,7 +485,7 @@ DataManager.processWULNotetags2 = function(group) {
 Yanfly.WUL.BattleManager_startAction = BattleManager.startAction;
 BattleManager.startAction = function() {
     var subject = this._subject;
-    var action = subject.currentAction();
+    if (subject) var action = subject.currentAction();
     if (action) action.processUnleash();
     Yanfly.WUL.BattleManager_startAction.call(this);
 };
@@ -519,31 +526,45 @@ Game_BattlerBase.prototype.guardSkillId = function() {
 //=============================================================================
 
 Game_Battler.prototype.isReplaceAttackSkillId = function(obj) {
-    if (!obj) return false;
-    if (obj.attackReplace === undefined) return false;
-    if (obj.attackReplaceEval === undefined) return false;
-    var id = obj.attackReplace;
-    var a = this;
-    var user = this;
-    var s = $gameSwitches._data;
-    var v = $gameVariables._data;
-    if (obj.attackReplaceEval !== '') eval(obj.attackReplaceEval);
-    if (id !== 0) this._replaceAttackSkillId = id;
-    return this._replaceAttackSkillId > 0;
+  if (!obj) return false;
+  if (obj.attackReplace === undefined) return false;
+  if (obj.attackReplaceEval === undefined) return false;
+  var id = obj.attackReplace;
+  var a = this;
+  var user = this;
+  var s = $gameSwitches._data;
+  var v = $gameVariables._data;
+  if (obj.attackReplaceEval !== '') {
+    var code = obj.attackReplaceEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'REPLACE ATTACK SKILL ID ERROR');
+    }
+  }
+  if (id !== 0) this._replaceAttackSkillId = id;
+  return this._replaceAttackSkillId > 0;
 };
 
 Game_Battler.prototype.isReplaceGuardSkillId = function(obj) {
-    if (!obj) return false;
-    if (obj.guardReplace === undefined) return false;
-    if (obj.guardReplaceEval === undefined) return false;
-    var id = obj.guardReplace;
-    var a = this;
-    var user = this;
-    var s = $gameSwitches._data;
-    var v = $gameVariables._data;
-    if (obj.guardReplaceEval !== '') eval(obj.guardReplaceEval);
-    if (id !== 0) this._replaceGuardSkillId = id;
-    return this._replaceGuardSkillId > 0;
+  if (!obj) return false;
+  if (obj.guardReplace === undefined) return false;
+  if (obj.guardReplaceEval === undefined) return false;
+  var id = obj.guardReplace;
+  var a = this;
+  var user = this;
+  var s = $gameSwitches._data;
+  var v = $gameVariables._data;
+  if (obj.guardReplaceEval !== '') {
+    var code = obj.guardReplaceEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'REPLACE GUARD SKILL ID ERROR');
+    }
+  }
+  if (id !== 0) this._replaceGuardSkillId = id;
+  return this._replaceGuardSkillId > 0;
 };
 
 Game_Battler.prototype.replaceAttackSkillId = function() {
@@ -615,33 +636,45 @@ Game_Battler.prototype.guardUnleashBonusRate = function(skillId) {
 };
 
 Game_Battler.prototype.getWeaponUnleashRate = function(unleash) {
-    var skillId = unleash[0];
-    var skill = $dataSkills[skillId];
-    var item = $dataSkills[skillId];
-    var rate = unleash[1];
-    var evalLine = unleash[2];
-    var a = this;
-    var user = this;
-    var s = $gameSwitches._data;
-    var v = $gameVariables._data;
-    rate += this.weaponUnleashBonusRate(skillId);
-    if (evalLine !== '') eval(evalLine);
-    return rate;
+  var skillId = unleash[0];
+  var skill = $dataSkills[skillId];
+  var item = $dataSkills[skillId];
+  var rate = unleash[1];
+  var evalLine = unleash[2];
+  var a = this;
+  var user = this;
+  var s = $gameSwitches._data;
+  var v = $gameVariables._data;
+  rate += this.weaponUnleashBonusRate(skillId);
+  if (evalLine !== '') {
+    try {
+      eval(evalLine);
+    } catch (e) {
+      Yanfly.Util.displayError(e, evalLine, 'WEAPON UNLEASH RATE ERROR');
+    }
+  }
+  return rate;
 };
 
 Game_Battler.prototype.getGuardUnleashRate = function(unleash) {
-    var skillId = unleash[0];
-    var skill = $dataSkills[skillId];
-    var item = $dataSkills[skillId];
-    var rate = unleash[1];
-    var evalLine = unleash[2];
-    var a = this;
-    var user = this;
-    var s = $gameSwitches._data;
-    var v = $gameVariables._data;
-    rate += this.guardUnleashBonusRate(skillId)
-    if (evalLine !== '') eval(evalLine);
-    return rate;
+  var skillId = unleash[0];
+  var skill = $dataSkills[skillId];
+  var item = $dataSkills[skillId];
+  var rate = unleash[1];
+  var evalLine = unleash[2];
+  var a = this;
+  var user = this;
+  var s = $gameSwitches._data;
+  var v = $gameVariables._data;
+  rate += this.guardUnleashBonusRate(skillId)
+  if (evalLine !== '') {
+    try {
+      eval(evalLine);
+    } catch (e) {
+      Yanfly.Util.displayError(e, evalLine, 'GUARD UNLEASH RATE ERROR');
+    }
+  }
+  return rate;
 };
 
 //=============================================================================
@@ -916,7 +949,8 @@ Scene_Battle.prototype.commandAttack = function() {
       BattleManager.actor().setLastBattleSkill(skill);
       this.onSelectAction();
     } else {
-      Yanfly.WUL.Scene_Battle_commandAttack.call(this);
+      BattleManager.actor().setLastBattleSkill(skill);
+      this.selectNextCommand();
     }
 };
 
@@ -929,7 +963,8 @@ Scene_Battle.prototype.commandGuard = function() {
       BattleManager.actor().setLastBattleSkill(skill);
       this.onSelectAction();
     } else {
-      Yanfly.WUL.Scene_Battle_commandGuard.call(this);
+      BattleManager.actor().setLastBattleSkill(skill);
+      this.selectNextCommand();
     }
 };
 
@@ -948,6 +983,23 @@ Scene_Battle.prototype.onEnemyCancel = function() {
   if (this.isAnyInputWindowActive()) return;
   if (['attack', 'guard'].contains(this._actorCommandWindow.currentSymbol())) {
     this._actorCommandWindow.activate();
+  }
+};
+
+//=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
   }
 };
 

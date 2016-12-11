@@ -8,10 +8,11 @@ Imported.YEP_InstantCast = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.Instant = Yanfly.Instant || {};
+Yanfly.Instant.version = 1.09;
 
 //=============================================================================
  /*:
- * @plugindesc v1.08 Allows skills/items to be instantly cast after being
+ * @plugindesc v1.09 Allows skills/items to be instantly cast after being
  * selected in the battle menu.
  * @author Yanfly Engine Plugins
  *
@@ -148,6 +149,9 @@ Yanfly.Instant = Yanfly.Instant || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.09:
+ * - Lunatic Mode fail safes added.
  *
  * Version 1.08:
  * - Updated for RPG Maker MV version 1.1.0.
@@ -341,6 +345,7 @@ BattleManager.endActorInstantCast = function() {
     }
     if (this.updateEventMain()) return;
     Yanfly.Instant.BattleManager_endAction.call(this);
+    this._subject = user;
     this._instantCasting = undefined;
     user.makeActions();
     if (this.checkBattleEnd()) return;
@@ -424,7 +429,12 @@ Game_Battler.prototype.performInstantEval = function(item) {
     var subject = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(item.instantEval);
+    var code = item.instantEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'CUSTOM INSTANT CAST ERROR');
+    }
     return instant;
 };
 
@@ -599,6 +609,23 @@ Window_Base.prototype.drawInstantIcon = function(item, wx, wy, ww) {
     if (!actor) return;
     if (!actor.isInstantCast(item)) return;
     this.drawIcon(icon, wx + 2, wy + 2);
+};
+
+//=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

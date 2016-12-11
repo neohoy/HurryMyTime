@@ -8,10 +8,11 @@ Imported.YEP_SpecialParamFormula = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.SParam = Yanfly.SParam || {};
+Yanfly.SParam.version = 1.04;
 
 //=============================================================================
  /*:
- * @plugindesc v1.03 Control the formulas of special parameters for
+ * @plugindesc v1.04 Control the formulas of special parameters for
  * TGR, GRD, REC, PHA, MCR, TCR, PDR, MDR, FDR, EXR.
  * @author Yanfly Engine Plugins
  *
@@ -382,6 +383,9 @@ Yanfly.SParam = Yanfly.SParam || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.04:
+ * - Lunatic Mode fail safes added.
+ *
  * Version 1.03:
  * - Fixed an issue with the battler.setSParam functions that made them take 
  * the wrong value due caching issues.
@@ -545,7 +549,13 @@ Game_BattlerBase.prototype.sparam = function(id) {
     var subject = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    this._sparam[id] = eval(Yanfly.Param.SParamFormula[id]);
+    var code = Yanfly.Param.SParamFormula[id];
+    try {
+      this._sparam[id] = eval(code);
+    } catch (e) {
+      this._sparam[id] = 0;
+      Yanfly.Util.displayError(e, code, 'SPECIAL PARAM FORMULA ERROR');
+    }
     return this._sparam[id];
 };
 
@@ -831,7 +841,13 @@ Game_Actor.prototype.basicFloorDamage = function() {
     var target = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    value = eval(Yanfly.Param.SParamFloorDmg);
+    var code = Yanfly.Param.SParamFloorDmg;
+    try {
+      value = eval(code);
+    } catch (e) {
+      value = 0;
+      Yanfly.Util.displayError(e, code, 'FLOOR DAMAGE FORMULA ERROR');
+    }
     return value;
 };
 
@@ -842,7 +858,13 @@ Game_Actor.prototype.benchMembersExpRate = function() {
     var subject = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    var rate = eval(Yanfly.Param.SParamReserveExp);
+    var code = Yanfly.Param.SParamReserveExp;
+    try {
+      var rate = eval(code);
+    } catch (e) {
+      var rate = 1;
+      Yanfly.Util.displayError(e, code, 'BENCH MEMBERS EXP RATE FORMULA ERROR');
+    }
     return rate;
 };
 
@@ -881,7 +903,30 @@ Game_Action.prototype.applyGuard = function(damage, target) {
     var b = target;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    return eval(Yanfly.Param.SParamGrdCalc);
+    var code = Yanfly.Param.SParamGrdCalc;
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'SPECIAL PARAM GUARD FORMULA ERROR');
+      return 1;
+    }
+};
+
+//=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

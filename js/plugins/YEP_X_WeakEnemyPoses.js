@@ -8,10 +8,11 @@ Imported.YEP_X_WeakEnemyPoses = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.WEPose = Yanfly.WEPose || {};
+Yanfly.WEPose.version = 1.01;
 
 //=============================================================================
  /*:
- * @plugindesc v1.00 (Requires YEP_BattleEngineCore.js) Allow enemies to
+ * @plugindesc v1.01 (Requires YEP_BattleEngineCore.js) Allow enemies to
  * have different battler images when they're weakened.
  * @author Yanfly Engine Plugins
  *
@@ -118,6 +119,16 @@ Yanfly.WEPose = Yanfly.WEPose || {};
  * 
  *   defaultBattlerHue
  *   - This will be the default battler's hue.
+ *
+ * ============================================================================
+ * Changelog
+ * ============================================================================
+ *
+ * Version 1.01:
+ * - Lunatic Mode fail safes added.
+ *
+ * Version 1.00:
+ * - Finished Plugin!
  */
 //=============================================================================
 
@@ -291,7 +302,11 @@ Game_Enemy.prototype.makeEnemyWeakPoseEval = function() {
   var target = this;
   var s = $gameSwitches._data;
   var v = $gameVariables._data;
-  eval(code);
+  try {
+    eval(code);
+  } catch (e) {
+    Yanfly.Util.displayError(e, code, 'WEAK POSE EVAL ERROR');
+  }
   this._weakPoseBattlerName = name;
   this._weakPoseBattlerHue = hue;
 };
@@ -329,10 +344,31 @@ Game_Enemy.prototype.makeStateWeakPoseEval = function() {
       var target = this;
       var s = $gameSwitches._data;
       var v = $gameVariables._data;
-      eval(code);
+      try {
+        eval(code);
+      } catch (e) {
+        Yanfly.Util.displayError(e, code, 'WEAK POSE STATE EVAL ERROR');
+      }
       this._weakPoseBattlerName = name;
       this._weakPoseBattlerHue = hue;
       break;
+    }
+  }
+};
+
+//=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
     }
   }
 };

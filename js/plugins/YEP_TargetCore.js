@@ -8,10 +8,11 @@ Imported.YEP_TargetCore = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.Target = Yanfly.Target || {};
+Yanfly.Target.version = 1.03;
 
 //=============================================================================
  /*:
- * @plugindesc v1.02a Expand the target scope from RPG Maker's default
+ * @plugindesc v1.03 Expand the target scope from RPG Maker's default
  * limitations for better target control.
  * @author Yanfly Engine Plugins
  *
@@ -237,6 +238,9 @@ Yanfly.Target = Yanfly.Target || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.03:
+ * - Lunatic Mode fail safes added.
  *
  * Version 1.02a:
  * - <Target: Everybody> will now have allies highlighted as well.
@@ -738,7 +742,12 @@ Game_Action.prototype.makeEvalTargets = function() {
   var friends = allies;
   var foes = this.opponentsUnit();
   var opponents = foes;
-  eval(this.item().customTargetEval);
+  var code = this.item().customTargetEval;
+  try {
+    eval(code);
+  } catch (e) {
+    Yanfly.Util.displayError(e, code, 'MAKE CUSTOM TARGETS ERROR');
+  }
   return targets;
 };
 
@@ -902,7 +911,12 @@ Window_Help.prototype.makeCustomTargetText = function(action) {
     var subject = user;
     var b = user;
     var target = user;
-    eval(action.item().customTargetText);
+    var code = action.item().customTargetText;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'MAKE CUSTOM TARGET TEXT ERROR');
+    }
     return text;
 };
 
@@ -1018,6 +1032,17 @@ if (!Yanfly.Util.toGroup) {
     Yanfly.Util.toGroup = function(inVal) {
         return inVal;
     }
+};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

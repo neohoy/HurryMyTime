@@ -8,10 +8,11 @@ Imported.YEP_JobPoints = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.JP = Yanfly.JP || {};
+Yanfly.JP.version = 1.08;
 
 //=============================================================================
  /*:
- * @plugindesc v1.07 This plugin by itself doesn't do much, but it enables
+ * @plugindesc v1.08 This plugin by itself doesn't do much, but it enables
  * actors to acquire JP (job points) used for other plugins.
  * @author Yanfly Engine Plugins
  *
@@ -191,6 +192,9 @@ Yanfly.JP = Yanfly.JP || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.08:
+ * - Lunatic Mode fail safes added.
+ *
  * Version 1.07:
  * - Updated for RPG Maker MV version 1.1.0.
  *
@@ -239,6 +243,7 @@ Yanfly.Param.JpTextFormat = String(Yanfly.Parameters['JP Gained in Battle']);
 Yanfly.Param.JpAliveActors = eval(String(Yanfly.Parameters['Alive Actors']));
 
 Yanfly.Param.JpShowMenu = String(Yanfly.Parameters['Show In Menu']);
+Yanfly.Param.JpShowMenu = eval(Yanfly.Param.JpShowMenu);
 Yanfly.Param.JpMenuFormat = String(Yanfly.Parameters['Menu Format']);
 
 Yanfly.Param.JpPerLevel = String(Yanfly.Parameters['JP Per Level']);
@@ -517,7 +522,18 @@ Yanfly.JP.Game_Actor_levelUp = Game_Actor.prototype.levelUp;
 Game_Actor.prototype.levelUp = function() {
     Yanfly.JP.Game_Actor_levelUp.call(this);
     if (this._preventJpLevelUpGain) return;
-    var value = eval(Yanfly.Param.JpPerLevel)
+    var user = this;
+    var target = this;
+    var a = this;
+    var b = this;
+    var level = this.level;
+    var code = Yanfly.Param.JpPerLevel;
+    try {
+      var value = eval(code)
+    } catch (e) {
+      var value = 0;
+      Yanfly.Util.displayError(e, code, 'LEVEL UP JP FORMULA ERROR');
+    }
 		this.gainJp(value, this.currentClass().id);
 };
 
@@ -526,7 +542,17 @@ Game_Actor.prototype.levelUp = function() {
 //=============================================================================
 
 Game_Enemy.prototype.jp = function() {
-    return eval(this.enemy().jp);
+    var user = this;
+    var target = this;
+    var a = this;
+    var b = this;
+    var code = this.enemy().jp;
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'ENEMY JP FORMULA ERROR');
+      return 0;
+    }
 };
 
 //=============================================================================
@@ -603,7 +629,7 @@ Game_Interpreter.prototype.modifyJp = function(type, args) {
 
 Yanfly.JP.Window_Base_dASS = Window_Base.prototype.drawActorSimpleStatus;
 Window_Base.prototype.drawActorSimpleStatus = function(actor, wx, wy, ww) {
-    this._drawMenuJP = eval(Yanfly.Param.JpShowMenu);
+    this._drawMenuJP = Yanfly.Param.JpShowMenu;
     Yanfly.JP.Window_Base_dASS.call(this, actor, wx, wy, ww);
     this._drawMenuJP = undefined;
 };
@@ -640,7 +666,7 @@ Window_Base.prototype.textWidthEx = function(text) {
 // Window_VictoryJp
 //=============================================================================
 
-if (Imported.YEP_VictoryAftermath && eval(Yanfly.Param.JpEnableAftermath)) {
+if (Imported.YEP_VictoryAftermath && Yanfly.Param.JpEnableAftermath) {
 
 function Window_VictoryJp() {
     this.initialize.apply(this, arguments);
@@ -726,6 +752,17 @@ if (!Yanfly.Util.toGroup) {
 		Yanfly.Util.toGroup = function(inVal) {
 				return inVal;
 		}
+};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

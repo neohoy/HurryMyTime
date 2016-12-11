@@ -8,10 +8,11 @@ Imported.YEP_SkillCore = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.Skill = Yanfly.Skill || {};
+Yanfly.Skill.version = 1.11;
 
 //=============================================================================
 /*:
- * @plugindesc v1.10b Skills are now given more functions and the ability
+ * @plugindesc v1.11 Skills are now given more functions and the ability
  * to require different types of costs.
  * @author Yanfly Engine Plugins
  *
@@ -310,10 +311,25 @@ Yanfly.Skill = Yanfly.Skill || {};
  * if the skill does land.
  *
  * Skill and Item Notetags:
- *   <Before Eval>    <Pre-Damage Eval>    <Post-Damage Eval>    <After Eval>
- *    code             code                 code                  code
- *    code             code                 code                  code
- *   </Before Eval>   </Pre-Damage Eval>   </Post-Damage Eval>   </After Eval>
+ *   <Before Eval>
+ *    code
+ *    code
+ *   </Before Eval>
+ *
+ *   <Pre-Damage Eval>
+ *    code
+ *    code
+ *   </Pre-Damage Eval>
+ *
+ *   <Post-Damage Eval>
+ *    code
+ *    code
+ *   <Post-Damage Eval>
+ *
+ *   <After Eval>
+ *    code
+ *    code
+ *   <After Eval>
  *   If you wish to use custom effects for your skill, you can insert the
  *   respective notetags into the skill (or item) noteboxes and it will run the
  *   code that appears in between the tags. However, using any form of comments
@@ -327,6 +343,9 @@ Yanfly.Skill = Yanfly.Skill || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.11:
+ * - Lunatic Mode fail safes added.
  *
  * Version 1.10b:
  * - Fixed a visual bug when using text code font changing for custom skill
@@ -688,7 +707,12 @@ Game_BattlerBase.prototype.meetsCustomShowEval = function(skill) {
     var subject = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(skill.costShowEval);
+    var code = skill.costShowEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'SKILL CUSTOM SHOW EVAL ERROR');
+    }
     return visible;
 };
 
@@ -701,7 +725,12 @@ Game_BattlerBase.prototype.meetsSkillConditionsEval = function(skill) {
     var subject = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(skill.requireEval);
+    var code = skill.requireEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'SKILL CUSTOM REQUIRE EVAL ERROR');
+    }
     return value;
 };
 
@@ -714,7 +743,12 @@ Game_BattlerBase.prototype.skillHpCost = function(skill) {
   var s = $gameSwitches._data;
   var v = $gameVariables._data;
   cost += this.mhp * skill.hpCostPer;
-  eval(skill.hpCostEval);
+  var code = skill.hpCostEval;
+  try {
+    eval(code);
+  } catch (e) {
+    Yanfly.Util.displayError(e, code, 'SKILL CUSTOM HP COST ERROR');
+  }
   return Math.max(0, Math.floor(cost));
 };
 
@@ -727,7 +761,12 @@ Game_BattlerBase.prototype.skillMpCost = function(skill) {
   var s = $gameSwitches._data;
   var v = $gameVariables._data;
   cost += this.mmp * skill.mpCostPer;
-  eval(skill.mpCostEval);
+  var code = skill.mpCostEval;
+  try {
+    eval(code);
+  } catch (e) {
+    Yanfly.Util.displayError(e, code, 'SKILL CUSTOM MP COST ERROR');
+  }
   return Math.max(0, Math.floor(cost * this.mcr));
 };
 
@@ -740,7 +779,12 @@ Game_BattlerBase.prototype.skillTpCost = function(skill) {
   var s = $gameSwitches._data;
   var v = $gameVariables._data;
   cost += this.maxTp() * skill.tpCostPer;
-  eval(skill.tpCostEval);
+  var code = skill.tpCostEval;
+  try {
+    eval(code);
+  } catch (e) {
+    Yanfly.Util.displayError(e, code, 'SKILL CUSTOM TP COST ERROR');
+  }
   return Math.max(0, Math.floor(cost));
 };
 
@@ -777,7 +821,12 @@ Game_BattlerBase.prototype.paySkillEvalCost = function(skill) {
     var subject = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(skill.executeEval);
+    var code = skill.executeEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'SKILL PAY COST EVAL ERROR');
+    }
 };
 
 Game_BattlerBase.prototype.gauge1 = function() {
@@ -1003,7 +1052,12 @@ Game_Action.prototype.applyBeforeEval = function(target) {
     var subject = this.subject();
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(item.customBeforeEval);
+    var code = item.customBeforeEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'BEFORE EVAL ERROR');
+    }
 };
 
 Game_Action.prototype.applyAfterEffect = function(target) {
@@ -1017,7 +1071,12 @@ Game_Action.prototype.applyAfterEval = function(target) {
     var subject = this.subject();
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(item.customAfterEval);
+    var code = item.customAfterEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'AFTER EVAL ERROR');
+    }
 };
 
 Yanfly.Skill.Game_Action_executeDamage = Game_Action.prototype.executeDamage;
@@ -1040,7 +1099,12 @@ Game_Action.prototype.applyPreDamageEval = function(target, value) {
     var subject = this.subject();
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(item.customPreDamageEval);
+    var code = item.customPreDamageEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'PRE-DAMAGE EVAL ERROR');
+    }
     return value;
 };
 
@@ -1055,7 +1119,12 @@ Game_Action.prototype.applyPostDamageEval = function(target, value) {
     var subject = this.subject();
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(item.customPostDamageEval);
+    var code = item.customPostDamageEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'POST-DAMAGE EVAL ERROR');
+    }
 };
 
 //=============================================================================
@@ -1207,7 +1276,12 @@ Window_SkillList.prototype.runDisplayEvalCost = function(skill) {
     var subject = this._actor;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(skill.costdisplayEval);
+    var code = skill.costdisplayEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'SKILL COST DISPLAY EVAL ERROR');
+    }
 };
 
 Window_SkillList.prototype.drawOtherCost = function(skill, wx, wy, dw) {
@@ -1224,6 +1298,17 @@ if (!Yanfly.Util.toGroup) {
     Yanfly.Util.toGroup = function(inVal) {
         return inVal;
     }
+};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

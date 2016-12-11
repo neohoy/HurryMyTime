@@ -8,10 +8,11 @@ Imported.YEP_MapSelectSkill = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.MSS = Yanfly.MSS || {};
+Yanfly.MSS.version = 1.02;
 
 //=============================================================================
  /*:
- * @plugindesc v1.01 Open up a window similar to the Select Item Window,
+ * @plugindesc v1.02 Open up a window similar to the Select Item Window,
  * but instead, returns Skill ID's to a variable.
  * @author Yanfly Engine Plugins
  *
@@ -112,6 +113,9 @@ Yanfly.MSS = Yanfly.MSS || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.02:
+ * - Optimization update.
  *
  * Version 1.01:
  * - Compatibility update with Self Switches & Variables v1.01.

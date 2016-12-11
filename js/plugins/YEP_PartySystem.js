@@ -8,10 +8,11 @@ Imported.YEP_PartySystem = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.Party = Yanfly.Party || {};
+Yanfly.Party.version = 1.10;
 
 //=============================================================================
  /*:
- * @plugindesc v1.09 Replaces the default 'Formation' command with a new
+ * @plugindesc v1.10 Replaces the default 'Formation' command with a new
  * menu for players to easily change party formations.
  * @author Yanfly Engine Plugins
  *
@@ -215,6 +216,9 @@ Yanfly.Party = Yanfly.Party || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.10:
+ * - Optimization update.
+ *
  * Version 1.09:
  * - Fixed a bug that caused party members to not index themselves properly in
  * battle. When in battle, actor index will now refer to the index of their
@@ -271,13 +275,17 @@ Yanfly.Icon = Yanfly.Icon || {};
 
 Yanfly.Param.MaxBattleMembers = Number(Yanfly.Parameters['Max Battle Members']);
 Yanfly.Param.PartyShowBattle = String(Yanfly.Parameters['Show Battle Command']);
+Yanfly.Param.PartyShowBattle = eval(Yanfly.Param.PartyShowBattle);
 Yanfly.Param.PartyEnBattle = String(Yanfly.Parameters['Enable Battle Command']);
+Yanfly.Param.PartyEnBattle = eval(Yanfly.Param.PartyEnBattle);
 Yanfly.Param.PartyCooldown = Number(Yanfly.Parameters['Battle Cooldown']);
 Yanfly.Param.PartyMaxFollower = Number(Yanfly.Parameters['Maximum Followers']);
 Yanfly.Param.ParamExpDis = eval(String(Yanfly.Parameters['EXP Distribution']));
 
 Yanfly.Param.PartyHelpWindow = String(Yanfly.Parameters['Help Window']);
+Yanfly.Param.PartyHelpWindow = eval(Yanfly.Param.PartyHelpWindow);
 Yanfly.Param.PartyLockFirst = String(Yanfly.Parameters['Lock First Actor']);
+Yanfly.Param.PartyLockFirst = eval(Yanfly.Param.PartyLockFirst);
 Yanfly.Param.PartyTextAlign = String(Yanfly.Parameters['Text Alignment']);
 Yanfly.Param.PartyCommand1 = String(Yanfly.Parameters['Change Command']);
 Yanfly.Param.PartyCommand2 = String(Yanfly.Parameters['Remove Command']);
@@ -285,13 +293,16 @@ Yanfly.Param.PartyCommand3 = String(Yanfly.Parameters['Revert Command']);
 Yanfly.Param.PartyCommand4 = String(Yanfly.Parameters['Finish Command']);
 Yanfly.Param.PartyEmptyText = String(Yanfly.Parameters['Empty Text']);
 Yanfly.Param.PartyShowFace = String(Yanfly.Parameters['Actor Face']);
+Yanfly.Param.PartyShowFace = eval(Yanfly.Param.PartyShowFace);
 Yanfly.Param.PartyShowCharacter = String(Yanfly.Parameters['Actor Sprite']);
+Yanfly.Param.PartyShowCharacter = eval(Yanfly.Param.PartyShowCharacter);
 Yanfly.Icon.PartyLocked = Number(Yanfly.Parameters['Locked Icon']);
 Yanfly.Icon.PartyRequired = Number(Yanfly.Parameters['Required Icon']);
 Yanfly.Icon.PartyRemove = Number(Yanfly.Parameters['Remove Icon']);
 Yanfly.Param.PartySpriteBufferY = Number(Yanfly.Parameters['Sprite Y Buffer']);
 Yanfly.Param.ColorInParty = Number(Yanfly.Parameters['In Party Text Color']);
 Yanfly.Param.PartyDetailWin = String(Yanfly.Parameters['Enable Detail Window']);
+Yanfly.Param.PartyDetailWin = eval(Yanfly.Param.PartyDetailWin);
 Yanfly.Param.PartyListWidth = Number(Yanfly.Parameters['List Width']);
 Yanfly.Param.PartyDetailParam = String(Yanfly.Parameters['Actor Parameters']);
 Yanfly.Param.PartyDetailEquip = String(Yanfly.Parameters['Actor Equipment']);
@@ -322,8 +333,8 @@ Game_System.prototype.initialize = function() {
 };
 
 Game_System.prototype.initPartySettings = function() {
-    this._showBattleFormation = eval(Yanfly.Param.PartyShowBattle);
-    this._battleFormationEnabled = eval(Yanfly.Param.PartyEnBattle);
+    this._showBattleFormation = Yanfly.Param.PartyShowBattle;
+    this._battleFormationEnabled = Yanfly.Param.PartyEnBattle;
 };
 
 Game_System.prototype.isShowBattleFormation = function() {
@@ -451,7 +462,7 @@ Yanfly.Party.Game_Party_setupStartingMembers =
 Game_Party.prototype.setupStartingMembers = function() {
     Yanfly.Party.Game_Party_setupStartingMembers.call(this);
     this.initializeBattleMembers();
-    if (eval(Yanfly.Param.PartyLockFirst)) this.lockActor(this._actors[0]);
+    if (Yanfly.Param.PartyLockFirst) this.lockActor(this._actors[0]);
 };
 
 Game_Party.prototype.toInitializeBattleMembers = function() {
@@ -464,7 +475,7 @@ Yanfly.Party.Game_Party_setupBattleTestMembers =
     Game_Party.prototype.setupBattleTestMembers;
 Game_Party.prototype.setupBattleTestMembers = function() {
     Yanfly.Party.Game_Party_setupBattleTestMembers.call(this);
-    if (eval(Yanfly.Param.PartyLockFirst)) this.lockActor(this._actors[0]);
+    if (Yanfly.Param.PartyLockFirst) this.lockActor(this._actors[0]);
     for (var i = 0; i < $dataActors.length; ++i) {
       var actor = $dataActors[i];
       if (!actor) continue;
@@ -803,10 +814,10 @@ Window_PartySelect.prototype.drawEmpty = function(rect) {
 };
 
 Window_PartySelect.prototype.drawActor = function(rect, actor) {
-    if (eval(Yanfly.Param.PartyShowFace)) {
+    if (Yanfly.Param.PartyShowFace) {
       this.drawActorFace(actor, rect.x, rect.y, rect.width, rect.height);
     }
-    if (eval(Yanfly.Param.PartyShowCharacter)) {
+    if (Yanfly.Param.PartyShowCharacter) {
       var ry = rect.height * 19/20;
       this.drawActorCharacter(actor, rect.x + rect.width / 2, ry);
     }
@@ -924,7 +935,7 @@ Window_PartyList.prototype.constructor = Window_PartyList;
 
 Window_PartyList.prototype.initialize = function(partyWindow) {;
     var wy = partyWindow.y + partyWindow.height;
-    this._detailedWindow = eval(Yanfly.Param.PartyDetailWin);
+    this._detailedWindow = Yanfly.Param.PartyDetailWin;
     var ww = this.windowWidth();
     var wh = Graphics.boxHeight - wy;
     Window_Selectable.prototype.initialize.call(this, 0, wy, ww, wh);
@@ -1503,7 +1514,7 @@ Scene_Party.prototype.initialize = function() {
 
 Scene_Party.prototype.create = function() {
     Scene_MenuBase.prototype.create.call(this);
-    if (eval(Yanfly.Param.PartyHelpWindow)) this.createHelpWindow();
+    if (Yanfly.Param.PartyHelpWindow) this.createHelpWindow();
     this.createCommandWindow();
     this.createPartyWindow();
     this.createListWindow();
@@ -1539,7 +1550,7 @@ Scene_Party.prototype.createListWindow = function() {
 };
 
 Scene_Party.prototype.createDetailWindow = function() {
-    if (!eval(Yanfly.Param.PartyDetailWin)) return;
+    if (!Yanfly.Param.PartyDetailWin) return;
     var wx = this._listWindow.width;
     var wy = this._listWindow.y;
     var ww = Graphics.boxWidth - wx;

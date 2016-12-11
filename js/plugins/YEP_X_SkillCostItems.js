@@ -8,10 +8,11 @@ Imported.YEP_X_SkillCostItems = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.SCI = Yanfly.SCI || {};
+Yanfly.SCI.version = 1.03;
 
 //=============================================================================
  /*:
- * @plugindesc v1.02 (Requires YEP_SkillCore.js) Skills can now have an
+ * @plugindesc v1.03 (Requires YEP_SkillCore.js) Skills can now have an
  * item cost attached to them.
  * @author Yanfly Engine Plugins
  *
@@ -213,6 +214,9 @@ Yanfly.SCI = Yanfly.SCI || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.03:
+ * - Lunatic Mode fail safes added.
  *
  * Version 1.02:
  * - Updated for RPG Maker MV version 1.1.0.
@@ -638,7 +642,11 @@ Game_BattlerBase.prototype.applySkillItemCostEval = function(item, cost, code) {
     var subject = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(code);
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'APPLY SKILL ITEM COST ERROR');
+    }
     return cost;
 };
 
@@ -994,6 +1002,17 @@ if (!Yanfly.Util.toGroup) {
     Yanfly.Util.toGroup = function(inVal) {
         return inVal;
     }
+};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

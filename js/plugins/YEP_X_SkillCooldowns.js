@@ -8,10 +8,11 @@ Imported.YEP_X_SkillCooldowns = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.SCD = Yanfly.SCD || {};
+Yanfly.SCD.version = 1.11;
 
 //=============================================================================
  /*:
- * @plugindesc v1.10 (Requires YEP_SkillCore.js) Cooldowns can be applied
+ * @plugindesc v1.11 (Requires YEP_SkillCore.js) Cooldowns can be applied
  * to skills to prevent them from being used continuously.
  * @author Yanfly Engine Plugins
  *
@@ -362,6 +363,9 @@ Yanfly.SCD = Yanfly.SCD || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.11:
+ * - Lunatic Mode fail safes added.
  *
  * Version 1.10:
  * - Compatibility update with Equip Battle Skills.
@@ -848,7 +852,12 @@ Game_BattlerBase.prototype.startWarmups = function() {
         var subject = this;
         var s = $gameSwitches._data;
         var v = $gameVariables._data;
-        eval(skill.warmupEval);
+        var code = skill.warmupEval;
+        try {
+          eval(code);
+        } catch (e) {
+          Yanfly.Util.displayError(e, code, 'CUSTOM WARMUP EVAL ERROR');
+        }
       }
       warmup *= this.cooldownDuration(skill);
       warmup += this.getWarmupMods(skill);
@@ -963,7 +972,12 @@ Game_BattlerBase.prototype.payCooldownCost = function(skill) {
           var subject = this;
           var s = $gameSwitches._data;
           var v = $gameVariables._data;
-          eval(skill.cooldownEval);
+          var code = skill.cooldownEval;
+          try {
+            eval(code);
+          } catch (e) {
+            Yanfly.Util.displayError(e, code, 'CUSTOM COOLDOWN EVAL ERROR');
+          }
         }
       }
       cooldown *= this.cooldownDuration(skill);

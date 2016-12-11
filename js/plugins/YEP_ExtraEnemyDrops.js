@@ -8,10 +8,11 @@ Imported.YEP_ExtraEnemyDrops = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.EED = Yanfly.EED || {};
+Yanfly.EED.version = 1.07;
 
 //=============================================================================
  /*:
- * @plugindesc v1.06 Allows your enemies to drop more than just three
+ * @plugindesc v1.07 Allows your enemies to drop more than just three
  * items as per the editor's limit.
  * @author Yanfly Engine Plugins
  *
@@ -356,31 +357,34 @@ Yanfly.EED = Yanfly.EED || {};
  * Changelog
  * ============================================================================
  *
- * Version v1.06:
+ * Version 1.07:
+ * - Lunatic Mode fail safes added.
+ *
+ * Version 1.06:
  * - New Conditional Drop line: Enemy Level. If you are using the
  * YEP Enemy Level plugin, this will allow conditional drops to check around
  * the enemy's level at death.
  *
- * Version v1.05:
+ * Version 1.05:
  * - Eval condition is given more priority as to not be triggered by other
  * conditions.
  *
- * Version v1.04:
+ * Version 1.04:
  * - Updated for RPG Maker MV version 1.1.0.
  *
- * Version v1.03:
+ * Version 1.03:
  * - Fixed documentation errors.
  * - Fixed a bug with the Turn Count condition.
  *
- * Version v1.02:
+ * Version 1.02:
  * - Fixed a bug that crashed the game when a conditional drop is made based
  * off of an item count.
  *
- * Version v1.01:
+ * Version 1.01:
  * - Added a new section: Lunatic Mode - New JavaScript Functions to allow
  * easier reference for the eval condition.
  *
- * Version v1.00:
+ * Version 1.00:
  * - Finished Plugin!
  */
 //=============================================================================
@@ -879,8 +883,13 @@ DropManager.conditionAliveMembers = function(line) {
     var a = this._enemy;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    value = eval('$gameParty.aliveMembers().length ' + line);
-    return value;
+    var code = '$gameParty.aliveMembers().length ' + line;
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'ENEMY DROP ALIVE CONDITION ERROR');
+      return false;
+    }
 };
 
 DropManager.conditionAlways = function() {
@@ -913,8 +922,13 @@ DropManager.conditionCount = function(line1, line2) {
     var a = this._enemy;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    value = eval('quantity ' + line2);
-    return value;
+    var code = 'quantity ' + line2;
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'ENEMY DROP COUNT ERROR');
+      return false;
+    }
 };
 
 DropManager.conditionDeadMembers = function(line) {
@@ -923,8 +937,13 @@ DropManager.conditionDeadMembers = function(line) {
     var a = this._enemy;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    value = eval('$gameParty.deadMembers().length ' + line);
-    return value;
+    var code = '$gameParty.deadMembers().length ' + line;
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'ENEMY DROP DEAD MEMBERS ERROR');
+      return false;
+    }
 };
 
 DropManager.conditionDeathTurn = function(line) {
@@ -933,8 +952,13 @@ DropManager.conditionDeathTurn = function(line) {
     var a = this._enemy;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    value = eval('user.deathTurn() ' + line);
-    return value;
+    var code = 'user.deathTurn() ' + line;
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'ENEMY DROP DEATH TURN ERROR');
+      return false;
+    }
 };
 
 DropManager.conditionEnemyLevel = function(line) {
@@ -944,8 +968,13 @@ DropManager.conditionEnemyLevel = function(line) {
     var a = this._enemy;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    value = eval('enemy.level ' + line);
-    return value;
+    var code = 'enemy.level ' + line;
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'ENEMY DROP ENEMY LEVEL ERROR');
+      return false;
+    }
 };
 
 DropManager.conditionLastStrike = function(line) {
@@ -971,8 +1000,13 @@ DropManager.conditionPartyMembers = function(line) {
     var a = this._enemy;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    value = eval('$gameParty.battleMembers().length ' + line);
-    return value;
+    var code = '$gameParty.battleMembers().length ' + line;
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'ENEMY DROP PARTY SIZE ERROR');
+      return false;
+    }
 };
 
 DropManager.conditionRandom = function(rate) {
@@ -992,8 +1026,13 @@ DropManager.conditionTimesStruck = function(line1, line2) {
     var a = this._enemy;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    value = eval('times ' + line2);
-    return value;
+    var code = 'times ' + line2;
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'ENEMY DROP TIMES STRUCK ERROR');
+      return false;
+    }
 };
 
 DropManager.getTimesStruck = function(line) {
@@ -1053,24 +1092,55 @@ DropManager.conditionTurn = function(line) {
     var a = this._enemy;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    value = eval('$gameTroop.turnCount() ' + line);
-    return value;
+    var code = '$gameTroop.turnCount() ' + line;
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'ENEMY DROP TURN ERROR');
+      return false;
+    }
 };
 
 DropManager.conditionVariable = function(varId, varLine) {
     var value = false;
-    value = eval('$gameVariables.value(varId) ' + varLine);
-    return value;
+    var code = '$gameVariables.value(varId) ' + varLine;
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'ENEMY DROP VARIABLE ERROR');
+      return false;
+    }
 };
 
-DropManager.conditionEval = function(line) {
+DropManager.conditionEval = function(code) {
     var user = this._enemy;
     var enemy = this._enemy;
     var a = this._enemy;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    value = eval(line);
-    return value;
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'ENEMY DROP EVAL ERROR');
+      return false;
+    }
+};
+
+//=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

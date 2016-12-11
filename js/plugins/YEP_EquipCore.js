@@ -8,10 +8,11 @@ Imported.YEP_EquipCore = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.Equip = Yanfly.Equip || {};
+Yanfly.Equip.version = 1.16;
 
 //=============================================================================
  /*:
- * @plugindesc v1.15 Allows for the equipment system to be more flexible to
+ * @plugindesc v1.16 Allows for the equipment system to be more flexible to
  * allow for unique equipment slots per class.
  * @author Yanfly Engine Plugins
  *
@@ -159,6 +160,9 @@ Yanfly.Equip = Yanfly.Equip || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.16:
+ * - Lunatic Mode fail safes added.
  *
  * Version 1.15:
  * - Optimization update.
@@ -515,7 +519,12 @@ Game_Actor.prototype.evalParamPlus = function(item, paramId) {
     var user = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(item.parameterEval);
+    var code = item.parameterEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'CUSTOM PARAMETER FORMULA ERROR');
+    }
     switch (paramId) {
       case 0:
         value += hp + maxhp + mhp;
@@ -1101,6 +1110,17 @@ if (!Yanfly.Util.toGroup) {
     Yanfly.Util.toGroup = function(inVal) {
         return inVal;
     }
+};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

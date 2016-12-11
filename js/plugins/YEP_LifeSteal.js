@@ -8,10 +8,11 @@ Imported.YEP_LifeSteal = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.LS = Yanfly.LS || {};
+Yanfly.LS.version = 1.02;
 
 //=============================================================================
  /*:
- * @plugindesc v1.01 Enables passive life steal traits without them being
+ * @plugindesc v1.02 Enables passive life steal traits without them being
  * active abilities but instead as passive traits.
  * @author Yanfly Engine Plugins
  *
@@ -223,13 +224,16 @@ Yanfly.LS = Yanfly.LS || {};
  *   <Custom MP Life Steal Certain Flat>
  *    flat = user.mhp;
  *   </Custom MP Life Steal Certain Flat>
- *   The 'flate' variable is the bonus amount of flat bonus the related user
+ *   The 'flat' variable is the bonus amount of flat bonus the related user
  *   will life steal HP/MP from its target relative to the damage dealt. This
  *   is a flat bonus value and stacks additively.
  *
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.02:
+ * - Lunatic Mode fail safes added.
  *
  * Version 1.01:
  * - Updated for RPG Maker MV version 1.1.0.
@@ -513,7 +517,11 @@ Game_Battler.prototype.getLifeStealRateEval = function(formula, target) {
     var b = target;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(formula);
+    try {
+      eval(formula);
+    } catch (e) {
+      Yanfly.Util.displayError(e, formula, 'LIFE STEAL RATE FORMULA ERROR');
+    }
     return rate;
 };
 
@@ -526,7 +534,11 @@ Game_Battler.prototype.getLifeStealFlatEval = function(formula, target) {
     var b = target;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(formula);
+    try {
+      eval(formula);
+    } catch (e) {
+      Yanfly.Util.displayError(e, formula, 'LIFE STEAL FLAT FORMULA ERROR');
+    }
     return flat;
 };
 
@@ -747,7 +759,11 @@ Game_Action.prototype.getLifeStealRateEval = function(formula, target, value) {
     var damage = value;
     var item = this.item();
     var skill = this.item();
-    eval(formula);
+    try {
+      eval(formula);
+    } catch (e) {
+      Yanfly.Util.displayError(e, formula, 'LIFE STEAL RATE FORMULA ERROR');
+    }
     return rate;
 };
 
@@ -762,8 +778,29 @@ Game_Action.prototype.getLifeStealFlatEval = function(formula, target, value) {
     var damage = value;
     var item = this.item();
     var skill = this.item();
-    eval(formula);
+    try {
+      eval(formula);
+    } catch (e) {
+      Yanfly.Util.displayError(e, formula, 'LIFE STEAL FLAT FORMULA ERROR');
+    }
     return flat;
+};
+
+//=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

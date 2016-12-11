@@ -8,10 +8,11 @@ Imported.YEP_X_ActSeqPack1 = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.ASP1 = Yanfly.ASP1 || {};
+Yanfly.ASP1.version = 1.11;
 
 //=============================================================================
  /*:
- * @plugindesc v1.10a (Requires YEP_BattleEngineCore.js) Basic functions are
+ * @plugindesc v1.11 (Requires YEP_BattleEngineCore.js) Basic functions are
  * added to the Battle Engine Core's action sequences.
  * @author Yanfly Engine Plugins
  *
@@ -708,6 +709,9 @@ Yanfly.ASP1 = Yanfly.ASP1 || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.11:
+ * - Lunatic Mode fail safes added.
+ *
  * Version 1.10a:
  * - Changed the 'Change Variable' action sequence to read more effectively.
  * - Documentation update for 'Action Common Event' and 'Common Event' to
@@ -1176,7 +1180,11 @@ BattleManager.actionEval = function(actionArgs) {
     for (var i = 1; i < actionArgs.length; ++i) {
         text = text + ', ' + String(actionArgs[i]);
     }
-    eval(text);
+    try {
+      eval(text);
+    } catch (e) {
+      Yanfly.Util.displayError(e, text, 'ACTION SEQUENCE EVAL ERROR');
+    }
     return false;
 };
 
@@ -1503,6 +1511,23 @@ BattleManager.actionTpModify = function(actionName, actionArgs) {
       }
     }, this);
     return true;
+};
+
+//=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

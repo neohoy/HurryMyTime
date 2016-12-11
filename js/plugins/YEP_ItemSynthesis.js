@@ -8,11 +8,11 @@ Imported.YEP_ItemSynthesis = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.IS = Yanfly.IS || {};
-Yanfly.IS.version = 1.07
+Yanfly.IS.version = 1.08;
 
 //=============================================================================
  /*:
- * @plugindesc v1.07 Players can now craft their own items in-game
+ * @plugindesc v1.08 Players can now craft their own items in-game
  * through an item synthesis system.
  * @author Yanfly Engine Plugins
  *
@@ -279,6 +279,9 @@ Yanfly.IS.version = 1.07
  * Changelog
  * ============================================================================
  *
+ * Version 1.08:
+ * - Lunatic Mode fail safes added.
+ *
  * Version 1.07:
  * - Added <Custom Synthesis Effect> Lunatic Mode notetag.
  *
@@ -321,7 +324,9 @@ Yanfly.Param = Yanfly.Param || {};
 
 Yanfly.Param.ISSynthCmd = String(Yanfly.Parameters['Synthesis Command']);
 Yanfly.Param.ISShowSynth = String(Yanfly.Parameters['Show Command']);
+Yanfly.Param.ISShowSynth = eval(Yanfly.Param.ISShowSynth);
 Yanfly.Param.ISEnableSynth = String(Yanfly.Parameters['Enable Command']);
+Yanfly.Param.ISEnableSynth = eval(Yanfly.Param.ISEnableSynth);
 Yanfly.Param.ISAutoPlaceCmd = String(Yanfly.Parameters['Auto Place Command']);
 
 Yanfly.Param.ISItemCmd = String(Yanfly.Parameters['Item Command']);
@@ -337,8 +342,9 @@ Yanfly.Param.ISCraftedArmors = String(Yanfly.Parameters['Crafted Armors']);
 
 Yanfly.Param.ISEquRecipes = eval(String(Yanfly.Parameters['Equipped Recipes']));
 Yanfly.Param.ISMaskUnknown = String(Yanfly.Parameters['Mask Unknown']);
-Yanfly.Param.ISMaskText    = String(Yanfly.Parameters['Mask Text']);
-Yanfly.Param.ISMaskItalic  = String(Yanfly.Parameters['Mask Italic']);
+Yanfly.Param.ISMaskText = String(Yanfly.Parameters['Mask Text']);
+Yanfly.Param.ISMaskItalic = String(Yanfly.Parameters['Mask Italic']);
+Yanfly.Param.ISMaskItalic = eval(Yanfly.Param.ISMaskItalic);
 Yanfly.Param.ISMaskHelpText = String(Yanfly.Parameters['Mask Help Text']);
 Yanfly.Param.ISIngredientsList = String(Yanfly.Parameters['Ingredients Text']);
 Yanfly.Param.ISAmountText = String(Yanfly.Parameters['Amount Text']);
@@ -599,8 +605,8 @@ Game_System.prototype.initialize = function() {
 };
 
 Game_System.prototype.initSynthesis = function() {
-    this._showSynthesis = eval(Yanfly.Param.ISShowSynth);
-    this._enableSynthesis = eval(Yanfly.Param.ISEnableSynth);
+    this._showSynthesis = Yanfly.Param.ISShowSynth;
+    this._enableSynthesis = Yanfly.Param.ISEnableSynth;
     this._synthedItems = [];
     this._synthedWeapons = [];
     this._synthedArmors = [];
@@ -1034,7 +1040,7 @@ Window_SynthesisList.prototype.drawItemName = function(item, x, y, width) {
     this.drawIcon(item.iconIndex, x + 2, y + 2);
     var text = item.name;
     if (eval(Yanfly.Param.ISMaskUnknown)) {
-      this.contents.fontItalic = eval(Yanfly.Param.ISMaskItalic);
+      this.contents.fontItalic = Yanfly.Param.ISMaskItalic;
       if (item.maskName !== '') {
         text = item.maskName;
       } else {
@@ -1666,8 +1672,13 @@ Scene_Synthesis.prototype.customSynthEffect = function(number) {
   var item = this._item;
   var s = $gameSwitches._data;
   var v = $gameVariables._data;
-  while (number--) {
-    eval(this._item.customSynthEval);
+  var code = this._item.customSynthEval;
+  try {
+    while (number--) {
+      eval(code);
+    }
+  } catch (e) {
+    Yanfly.Util.displayError(e, code, 'CUSTOM SYNTH EFFECT ERROR');
   }
 };
 
@@ -1721,6 +1732,18 @@ if (!Yanfly.Util.toGroup) {
         return inVal;
     }
 };
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
+};
+
 
 //=============================================================================
 // End of File

@@ -8,10 +8,11 @@ Imported.YEP_X_ItemDisassemble = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.IDA = Yanfly.IDA || {};
+Yanfly.IDA.version = 1.04;
 
 //=============================================================================
  /*:
- * @plugindesc v1.03 (Requires YEP_ItemCore.js) Grants the option to
+ * @plugindesc v1.04 (Requires YEP_ItemCore.js) Grants the option to
  * break down items in the item menu into other items.
  * @author Yanfly Engine Plugins
  *
@@ -288,6 +289,9 @@ Yanfly.IDA = Yanfly.IDA || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.04:
+ * - Lunatic Mode fail safes added.
  *
  * Version 1.03:
  * - Fixed a bug that caused NaN values to appear for the displayed rates.
@@ -607,14 +611,24 @@ ItemManager.disassemble = function(targetItem, effectItem) {
 };
 
 ItemManager.disassembleEval = function(results, targetItem, effectItem) {
-    var s = $gameSwitches._data;
-    var v = $gameVariables._data;
-    if (targetItem.customDisassembledEval) {
-      eval(targetItem.customDisassembledEval)
+  var s = $gameSwitches._data;
+  var v = $gameVariables._data;
+  if (targetItem.customDisassembledEval) {
+    var code = targetItem.customDisassembledEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'CUSTOM DISASSEMBLE EFFECT ERROR');
     }
-    if (effectItem.customDisassemblerEval) {
-      eval(effectItem.customDisassemblerEval)
+  }
+  if (effectItem.customDisassemblerEval) {
+    var code = effectItem.customDisassemblerEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'CUSTOM DISASSEMBLER EFFECT ERROR');
     }
+  }
 };
 
 //=============================================================================
@@ -1121,6 +1135,17 @@ if (!Yanfly.Util.toGroup) {
 Yanfly.Util.getRandomInt = function(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
+};
 
 //=============================================================================
 // End of File

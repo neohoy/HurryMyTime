@@ -8,10 +8,11 @@ Imported.YEP_AbsorptionBarrier = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.ABR = Yanfly.ABR || {};
+Yanfly.ABR.version = 1.05;
 
 //=============================================================================
  /*:
- * @plugindesc v1.04 Battlers can be surrounded by an absorption barrier
+ * @plugindesc v1.05 Battlers can be surrounded by an absorption barrier
  * that would mitigate damage dealt to HP.
  * @author Yanfly Engine Plugins
  *
@@ -408,6 +409,9 @@ Yanfly.ABR = Yanfly.ABR || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.05:
+ * - Lunatic Mode fail safes added.
+ *
  * Version 1.04:
  * - <User Barrier: -x>, <Target Barrier: -x>, <User Barrier x Turns: -y>, and
  * <Target Barrier x Turns: -y> notetags have been revamped. They will also
@@ -781,7 +785,11 @@ Game_Battler.prototype.gainBarrierEval = function(formula, turn, user, target) {
     var subject = user;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(formula);
+    try {
+      eval(formula);
+    } catch (e) {
+      Yanfly.Util.displayError(e, formula, 'GAIN BARRIER CUSTOM CODE ERROR');
+    }
     value = Math.floor(value);
     return value;
 };
@@ -913,7 +921,11 @@ Game_Battler.prototype.getbarrierPenRateEval = function(f1, c1, c2, c3, c4) {
     var damage = c4;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(f1);
+    try {
+      eval(f1);
+    } catch (e) {
+      Yanfly.Util.displayError(e, f1, 'BARRIER PEN RATE CUSTOM CODE ERROR');
+    }
     return rate;
 };
 
@@ -956,7 +968,11 @@ Game_Battler.prototype.getbarrierPenFlatEval = function(f1, c1, c2, c3, c4) {
     var damage = c4;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(f1);
+    try {
+      eval(f1);
+    } catch (e) {
+      Yanfly.Util.displayError(e, f1, 'BARRIER PEN FLAT CUSTOM CODE ERROR');
+    }
     return flat;
 };
 
@@ -1012,14 +1028,18 @@ Game_Battler.prototype.makeBattleStartBarrierPoints = function(array, obj) {
 };
 
 Game_Battler.prototype.makeBattleStartBarrierPointsEval = function(formula) {
-    var value = 0;
-    var a = this;
-    var user = this;
-    var subject = this;
-    var s = $gameSwitches._data;
-    var v = $gameVariables._data;
+  var value = 0;
+  var a = this;
+  var user = this;
+  var subject = this;
+  var s = $gameSwitches._data;
+  var v = $gameVariables._data;
+  try {
     eval(formula);
-    return value;
+  } catch (e) {
+    Yanfly.Util.displayError(e, formula, 'BARRIER START CUSTOM CODE ERROR');
+  }
+  return value;
 };
 
 Game_Battler.prototype.regenBarriers = function() {
@@ -1061,14 +1081,18 @@ Game_Battler.prototype.makeRegenBarrierPoints = function(array, obj) {
 };
 
 Game_Battler.prototype.makeRegenBarrierPointsEval = function(formula) {
-    var value = 0;
-    var a = this;
-    var user = this;
-    var subject = this;
-    var s = $gameSwitches._data;
-    var v = $gameVariables._data;
+  var value = 0;
+  var a = this;
+  var user = this;
+  var subject = this;
+  var s = $gameSwitches._data;
+  var v = $gameVariables._data;
+  try {
     eval(formula);
-    return value;
+  } catch (e) {
+    Yanfly.Util.displayError(e, formula, 'BARRIER REGEN CUSTOM CODE ERROR');
+  }
+  return value;
 };
 
 //=============================================================================
@@ -1282,19 +1306,24 @@ Game_Action.prototype.calcBarrierPenetrationRate = function(target, value) {
 };
 
 Game_Action.prototype.barrierPenetrationRateEval = function(target, value) {
-    var item = this.item();
-    if (item.barrierPenetrationRateEval === '') return 0;
-    var rate = 0;
-    var skill = item;
-    var a = this.subject();
-    var user = this.subject();
-    var subject = this.subject();
-    var b = target;
-    var damage = value;
-    var s = $gameSwitches._data;
-    var v = $gameVariables._data;
-    eval(item.barrierPenetrationRateEval);
-    return rate;
+  var item = this.item();
+  if (item.barrierPenetrationRateEval === '') return 0;
+  var rate = 0;
+  var skill = item;
+  var a = this.subject();
+  var user = this.subject();
+  var subject = this.subject();
+  var b = target;
+  var damage = value;
+  var s = $gameSwitches._data;
+  var v = $gameVariables._data;
+  var code = item.barrierPenetrationRateEval;
+  try {
+    eval(code);
+  } catch (e) {
+    Yanfly.Util.displayError(e, code, 'BARRIER PEN RATE CUSTOM CODE ERROR');
+  }
+  return rate;
 };
 
 Game_Action.prototype.calcBarrierPenetrationFlat = function(target, value) {
@@ -1307,17 +1336,22 @@ Game_Action.prototype.calcBarrierPenetrationFlat = function(target, value) {
 };
 
 Game_Action.prototype.barrierPenetrationFlatEval = function(target, value) {
-    var item = this.item();
-    if (item.barrierPenetrationFlatEval === '') return 0;
-    var flat = 0;
-    var a = this.subject();
-    var user = this.subject();
-    var subject = this.subject();
-    var b = target;
-    var s = $gameSwitches._data;
-    var v = $gameVariables._data;
-    eval(item.barrierPenetrationFlatEval);
-    return flat;
+  var item = this.item();
+  if (item.barrierPenetrationFlatEval === '') return 0;
+  var flat = 0;
+  var a = this.subject();
+  var user = this.subject();
+  var subject = this.subject();
+  var b = target;
+  var s = $gameSwitches._data;
+  var v = $gameVariables._data;
+  var code = item.barrierPenetrationFlatEval;
+  try {
+    eval(code);
+  } catch (e) {
+    Yanfly.Util.displayError(e, code, 'BARRIER PEN FLAT CUSTOM CODE ERROR');
+  }
+  return flat;
 };
 
 //=============================================================================
@@ -1395,8 +1429,19 @@ Yanfly.Util = Yanfly.Util || {};
 
 if (!Yanfly.Util.toGroup) {
     Yanfly.Util.toGroup = function(inVal) {
-        return inVal;
+      return inVal;
     }
+};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

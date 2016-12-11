@@ -8,10 +8,11 @@ Imported.YEP_EnemyLevels = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.ELV = Yanfly.ELV || {};
+Yanfly.ELV.version = 1.06;
 
 //=============================================================================
  /*:
- * @plugindesc v1.05 This plugin enables giving your enemies levels and
+ * @plugindesc v1.06 This plugin enables giving your enemies levels and
  * parameter changes with those levels.
  * @author Yanfly Engine Plugins
  *
@@ -484,6 +485,9 @@ Yanfly.ELV = Yanfly.ELV || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.06:
+ * - Lunatic Mode fail safes added.
+ *
  * Version 1.05:
  * - Updated the custom level formula to have the formulas 'b', 'r', and 'f' to
  * be able to use the formulas from FlyingDream's calculator.
@@ -921,7 +925,12 @@ Game_Enemy.prototype.originalLevel = function() {
 
 Game_Enemy.prototype.getSetupLevel = function() {
     var level = 0;
-    eval(this.enemy().startingLevel);
+    var code = this.enemy().startingLevel;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'ENEMY STARTING LEVEL ERROR');
+    }
     return Math.floor(level);
 };
 
@@ -965,7 +974,12 @@ Game_Enemy.prototype.paramBase = function(paramId) {
     var user = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    this._cacheBaseParam[paramId] = eval(formula);
+    try {
+      this._cacheBaseParam[paramId] = eval(formula);
+    } catch (e) {
+      this._cacheBaseParam[paramId] = 0;
+      Yanfly.Util.displayError(e, formula, 'ENEMY PARAM BASE FORMULA ERROR');
+    }
     return this._cacheBaseParam[paramId];
 };
 
@@ -990,7 +1004,12 @@ Game_Enemy.prototype.exp = function() {
     var r = rate;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    this._cacheBaseParam[paramId] = Math.floor(eval(formula));
+    try {
+      this._cacheBaseParam[paramId] = Math.floor(eval(formula));
+    } catch (e) {
+      this._cacheBaseParam[paramId] = 0;
+      Yanfly.Util.displayError(e, formula, 'ENEMY EXP FORMULA ERROR');
+    }
     return this._cacheBaseParam[paramId];
 };
 
@@ -1011,7 +1030,12 @@ Game_Enemy.prototype.gold = function() {
     var user = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    this._cacheBaseParam[paramId] = Math.floor(eval(formula));
+    try {
+      this._cacheBaseParam[paramId] = Math.floor(eval(formula));
+    } catch (e) {
+      this._cacheBaseParam[paramId] = 0;
+      Yanfly.Util.displayError(e, formula, 'ENEMY GOLD FORMULA ERROR');
+    }
     return this._cacheBaseParam[paramId];
 };
 
@@ -1209,7 +1233,12 @@ Game_Action.prototype.itemEnemyLevelEval = function(target, level) {
     var subject = this.subject();
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(this.item().enemyLevelEval);
+    var code = this.item().enemyLevelEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'ENEMY LEVEL ITEM ALTER CODE ERROR');
+    }
     return level;
 };
 
@@ -1291,6 +1320,17 @@ if (!Yanfly.Util.toGroup) {
     Yanfly.Util.toGroup = function(inVal) {
         return inVal;
     }
+};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

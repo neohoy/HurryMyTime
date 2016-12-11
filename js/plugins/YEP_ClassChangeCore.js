@@ -8,10 +8,11 @@ Imported.YEP_ClassChangeCore = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.CCC = Yanfly.CCC || {};
+Yanfly.CCC.version = 1.12;
 
 //=============================================================================
  /*:
- * @plugindesc v1.11 This plugin creates a system where your player
+ * @plugindesc v1.12 This plugin creates a system where your player
  * can change classes through the main menu.
  * @author Yanfly Engine Plugins
  *
@@ -255,6 +256,9 @@ Yanfly.CCC = Yanfly.CCC || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.12:
+ * - Optimization update.
+ *
  * Version 1.11:
  * - Added <Use Nickname> notetag for classes. This will cause the class to use
  * the actor's nickname instead when listed in the class list.
@@ -321,10 +325,14 @@ Yanfly.Icon = Yanfly.Icon || {};
 Yanfly.Param.CCCCmdName = String(Yanfly.Parameters['Class Command']);
 Yanfly.Param.CCCAutoAdd = eval(String(Yanfly.Parameters['Auto Add Menu']));
 Yanfly.Param.CCCShowCmd = String(Yanfly.Parameters['Show Command']);
+Yanfly.Param.CCCShowCmd = eval(Yanfly.Param.CCCShowCmd);
 Yanfly.Param.CCCEnableCmd = String(Yanfly.Parameters['Enable Command']);
+Yanfly.Param.CCCEnableCmd = eval(Yanfly.Param.CCCEnableCmd);
 Yanfly.Param.CCCAutoPlace = String(Yanfly.Parameters['Auto Place Command']);
+Yanfly.Param.CCCAutoPlace = eval(Yanfly.Param.CCCAutoPlace);
 Yanfly.Icon.DefaultClass = Number(Yanfly.Parameters['Default Icon']);
 Yanfly.Param.CCCMaintainLv = String(Yanfly.Parameters['Maintain Levels']);
+Yanfly.Param.CCCMaintainLv = eval(Yanfly.Param.CCCMaintainLv);
 Yanfly.Param.CCCUnlock = String(Yanfly.Parameters['Unlocked Classes']);
 Yanfly.Param.CCCUnlock = Yanfly.Param.CCCUnlock.split(' ');
 if (Yanfly.Param.CCCUnlock === '') Yanfly.Param.CCCUnlock = [];
@@ -334,8 +342,11 @@ for (Yanfly.i = 0; Yanfly.i < Yanfly.Param.CCCUnlock.length; ++Yanfly.i) {
 
 Yanfly.Param.CCCClassCmd = String(Yanfly.Parameters['Class Change Command']);
 Yanfly.Param.CCCShowClass = String(Yanfly.Parameters['Show Class Change']);
+Yanfly.Param.CCCShowClass = eval(Yanfly.Param.CCCShowClass);
 Yanfly.Param.CCCEnableClass = String(Yanfly.Parameters['Enable Class Change']);
+Yanfly.Param.CCCEnableClass = eval(Yanfly.Param.CCCEnableClass);
 Yanfly.Param.CCCShowLearn = String(Yanfly.Parameters['Show Skill Learn']);
+Yanfly.Param.CCCShowLearn = eval(Yanfly.Param.CCCShowLearn);
 Yanfly.Param.CCCFinishCmd = String(Yanfly.Parameters['Finish Command']);
 Yanfly.Param.CCCTextAlign = String(Yanfly.Parameters['Text Alignment']);
 
@@ -491,10 +502,10 @@ Game_System.prototype.initialize = function() {
 };
 
 Game_System.prototype.initClasses = function() {
-    this._showClass = eval(Yanfly.Param.CCCShowCmd);
-    this._enableClass = eval(Yanfly.Param.CCCEnableCmd);
-    this._showClassChange = eval(Yanfly.Param.CCCShowClass);
-    this._enableClassChange = eval(Yanfly.Param.CCCEnableClass);
+    this._showClass = Yanfly.Param.CCCShowCmd;
+    this._enableClass = Yanfly.Param.CCCEnableCmd;
+    this._showClassChange = Yanfly.Param.CCCShowClass;
+    this._enableClassChange = Yanfly.Param.CCCEnableClass;
 };
 
 Game_System.prototype.isShowClass = function() {
@@ -574,7 +585,7 @@ Game_Actor.prototype.removeClass = function(classId) {
 
 Yanfly.CCC.Game_Actor_changeClass = Game_Actor.prototype.changeClass;
 Game_Actor.prototype.changeClass = function(classId, keepExp) {
-    keepExp = eval(Yanfly.Param.CCCMaintainLv);
+    keepExp = Yanfly.Param.CCCMaintainLv;
     if (keepExp) {
       this._exp[classId] = this._exp[this._classId];
       keepExp = false;
@@ -608,7 +619,7 @@ Game_Actor.prototype.updateLearnedSkills = function(classId) {
 };
 
 Game_Actor.prototype.classLevel = function(classId) {
-    if (eval(Yanfly.Param.CCCMaintainLv)) return this.level;
+    if (Yanfly.Param.CCCMaintainLv) return this.level;
     if (this._exp[classId] === undefined) this._exp[classId] = 0;
     var level = 1;
     for (;;) {
@@ -911,7 +922,7 @@ Window_MenuCommand.prototype.addOriginalCommands = function() {
 };
 
 Window_MenuCommand.prototype.addClassCommand = function() {
-    if (!eval(Yanfly.Param.CCCAutoPlace)) return;
+    if (!Yanfly.Param.CCCAutoPlace) return;
     if (!$gameSystem.isShowClass()) return;
     if (this.findSymbol('class') > -1) return;
     var text = Yanfly.Param.CCCCmdName;
@@ -967,9 +978,9 @@ Window_ClassCommand.prototype.isClassEnabled = function() {
 
 Window_ClassCommand.prototype.addSkillLearnCommand = function() {
     if (!Imported.YEP_SkillLearnSystem) return;
-    if (!eval(Yanfly.Param.CCCShowLearn)) return;
+    if (!Yanfly.Param.CCCShowLearn) return;
     var name = Yanfly.Param.SLSCommand;
-    if (eval(Yanfly.Param.SLSIntegrate)) name = TextManager.skill;
+    if (Yanfly.Param.SLSIntegrate) name = TextManager.skill;
     var enabled = $gameSystem.isEnableLearnSkill();
     this.addCommand(name, 'learnSkill', enabled);
 };
@@ -1350,7 +1361,7 @@ Scene_Class.prototype.commandClass = function() {
 };
 
 Scene_Class.prototype.commandLearnSkill = function() {
-    if (eval(Yanfly.Param.SLSIntegrate)) {
+    if (Yanfly.Param.SLSIntegrate) {
       SceneManager.push(Scene_Skill);
     } else {
       SceneManager.push(Scene_LearnSkill);
@@ -1362,7 +1373,7 @@ Scene_Class.prototype.onItemOk = function() {
     var classId = this._itemWindow.item();
     var hpRate = this.actor().hp / this.actor().mhp;
     var mpRate = this.actor().mp / Math.max(1, this.actor().mmp);
-    this.actor().changeClass(classId, eval(Yanfly.Param.CCCMaintainLv));
+    this.actor().changeClass(classId, Yanfly.Param.CCCMaintainLv);
     var max = this.actor().isDead() ? 0 : 1;
     var hpAmount = Math.max(max, parseInt(this.actor().mhp * hpRate));
     this.actor().setHp(hpAmount);

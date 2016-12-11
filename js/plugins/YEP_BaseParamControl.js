@@ -8,10 +8,11 @@ Imported.YEP_BaseParamControl = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.BPC = Yanfly.BPC || {};
+Yanfly.BPC.version = 1.02;
 
 //=============================================================================
  /*:
- * @plugindesc v1.01 Gain control over the method of calculation for base
+ * @plugindesc v1.02 Gain control over the method of calculation for base
  * parameters: MaxHP, MaxMP, ATK, DEF, MAT, MDF, AGI, LUK.
  * @author Yanfly Engine Plugins
  *
@@ -482,6 +483,9 @@ Yanfly.BPC = Yanfly.BPC || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.02:
+ * - Lunatic Mode fail safes added.
+ *
  * Version 1.01:
  * - Fixed an issue with the battler.setParam functions that made them take the
  * wrong value due caching issues.
@@ -623,54 +627,72 @@ DataManager.getParamId = function(string) {
 //=============================================================================
 
 Game_BattlerBase.prototype.param = function(paramId) {
-    this._baseParamCache = this._baseParamCache || [];
-    if (this._baseParamCache[paramId]) return this._baseParamCache[paramId];
-    var base = this.paramBase(paramId);
-    var plus = this.paramPlus(paramId);
-    var paramRate = this.paramRate(paramId);
-    var buffRate = this.paramBuffRate(paramId);
-    var flat = this.paramFlat(paramId);
-    var minValue = this.paramMin(paramId);
-    var maxValue = Math.max(minValue, this.paramMax(paramId));
-    var a = this;
-    var user = this;
-    var subject = this;
-    var b = this;
-    var target = this;
-    var s = $gameSwitches._data;
-    var v = $gameVariables._data;
-    var value = eval(Yanfly.Param.BPCFormula[paramId]);
-    value = Math.round(value.clamp(minValue, maxValue));
-    this._baseParamCache[paramId] = value;
-    return this._baseParamCache[paramId];
+  this._baseParamCache = this._baseParamCache || [];
+  if (this._baseParamCache[paramId]) return this._baseParamCache[paramId];
+  var base = this.paramBase(paramId);
+  var plus = this.paramPlus(paramId);
+  var paramRate = this.paramRate(paramId);
+  var buffRate = this.paramBuffRate(paramId);
+  var flat = this.paramFlat(paramId);
+  var minValue = this.paramMin(paramId);
+  var maxValue = Math.max(minValue, this.paramMax(paramId));
+  var a = this;
+  var user = this;
+  var subject = this;
+  var b = this;
+  var target = this;
+  var s = $gameSwitches._data;
+  var v = $gameVariables._data;
+  var code = Yanfly.Param.BPCFormula[paramId];
+  try {
+    var value = eval(code);
+  } catch (e) {
+    var value = 0;
+    Yanfly.Util.displayError(e, code, 'CUSTOM PARAM FORMULA ERROR');
+  }
+  value = Math.round(value.clamp(minValue, maxValue));
+  this._baseParamCache[paramId] = value;
+  return this._baseParamCache[paramId];
 };
 
 Game_BattlerBase.prototype.paramMax = function(paramId) {
-    var customMax = this.customParamMax(paramId);
-    var a = this;
-    var user = this;
-    var subject = this;
-    var b = this;
-    var target = this;
-    var s = $gameSwitches._data;
-    var v = $gameVariables._data;
-    var value = eval(Yanfly.Param.BPCMaximum[paramId]);
-    value = Math.ceil(value);
-    return value;
+  var customMax = this.customParamMax(paramId);
+  var a = this;
+  var user = this;
+  var subject = this;
+  var b = this;
+  var target = this;
+  var s = $gameSwitches._data;
+  var v = $gameVariables._data;
+  var code = Yanfly.Param.BPCMaximum[paramId];
+  try {
+    var value = eval(code);
+  } catch (e) {
+    var value = 0;
+    Yanfly.Util.displayError(e, code, 'CUSTOM PARAM MAX FORMULA ERROR');
+  }
+  value = Math.ceil(value);
+  return value;
 };
 
 Game_BattlerBase.prototype.paramMin = function(paramId) {
-    var customMin = this.customParamMin(paramId);
-    var a = this;
-    var user = this;
-    var subject = this;
-    var b = this;
-    var target = this;
-    var s = $gameSwitches._data;
-    var v = $gameVariables._data;
-    var value = eval(Yanfly.Param.BPCMinimum[paramId]);
-    value = Math.ceil(value);
-    return value;
+  var customMin = this.customParamMin(paramId);
+  var a = this;
+  var user = this;
+  var subject = this;
+  var b = this;
+  var target = this;
+  var s = $gameSwitches._data;
+  var v = $gameVariables._data;
+  var code = Yanfly.Param.BPCMinimum[paramId];
+  try {
+    var value = eval(code);
+  } catch (e) {
+    var value = 0;
+    Yanfly.Util.displayError(e, code, 'CUSTOM PARAM MIN FORMULA ERROR');
+  }
+  value = Math.ceil(value);
+  return value;
 };
 
 Yanfly.BPC.Game_BattlerBase_initMembers = 
@@ -1117,6 +1139,23 @@ Game_Action.prototype.lukEffectRate = function(target) {
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
     return eval(Yanfly.Param.BPCLukEffectRate);
+};
+
+//=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

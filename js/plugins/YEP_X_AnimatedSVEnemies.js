@@ -8,10 +8,11 @@ Imported.YEP_X_AnimatedSVEnemies = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.SVE = Yanfly.SVE || {};
+Yanfly.SVE.version = 1.16;
 
 //=============================================================================
  /*:
- * @plugindesc v1.15 (Requires YEP_BattleEngineCore.js) This plugin lets
+ * @plugindesc v1.16 (Requires YEP_BattleEngineCore.js) This plugin lets
  * you use Animated Sideview Actors for enemies!
  * @author Yanfly Engine Plugins
  *
@@ -121,6 +122,11 @@ Yanfly.SVE = Yanfly.SVE || {};
  * @desc The default minimum floating height for enemies.
  * Lower - Closer to Ground     Larger - Higher Up
  * @default 50
+ *
+ * @param Floating Death
+ * @desc Allow enemies to remain floating while dead?
+ * NO - false     YES - true
+ * @default true
  *
  * @param ---Motions---
  * @default
@@ -523,6 +529,12 @@ Yanfly.SVE = Yanfly.SVE || {};
  *   <Floating Height: x>
  *   Sets the minimum float height for the enemy to x.
  *
+ *   <Floating Death>
+ *   <No Floating Death>
+ *   Decide whether or not this particular enemy will float while dead or
+ *   instead, drop to the ground instantly and will bypass the 'Floating Death'
+ *   plugin parameter for the particular enemy.
+ *
  *   <Scale Sprite: x%>
  *   This allows you to scale the sprite larger or smaller by x% of the
  *   original sprite size. If you wish to only scale either the width or the
@@ -713,6 +725,10 @@ Yanfly.SVE = Yanfly.SVE || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.16:
+ * - Added 'Floating Death' plugin parameter.
+ * - Optimization update.
+ *
  * Version 1.15:
  * - Updated for RPG Maker MV version 1.3.2.
  *
@@ -782,6 +798,8 @@ Yanfly.SVE = Yanfly.SVE || {};
 
 if (Imported.YEP_BattleEngineCore) {
 
+if (Yanfly.BEC.version && Yanfly.BEC.version >= 1.42) {
+
 //=============================================================================
 // Parameter Variables
 //=============================================================================
@@ -809,6 +827,8 @@ Yanfly.Param.SVELinkBreathing = eval(Yanfly.Parameters['HP Link Breathing']);
 Yanfly.Param.SVEFloatSpeed = Number(Yanfly.Parameters['Floating Speed']);
 Yanfly.Param.SVEFloatRate = Number(Yanfly.Parameters['Floating Rate']);
 Yanfly.Param.SVEFloatHeight = Number(Yanfly.Parameters['Floating Height']);
+Yanfly.Param.SVEFloatDeath = String(Yanfly.Parameters['Floating Death']);
+Yanfly.Param.SVEFloatDeath = eval(Yanfly.Param.SVEFloatDeath);
 
 Yanfly.Param.SVEShowShadow = eval(String(Yanfly.Parameters['Show Shadow']));
 Yanfly.Param.SVEShadowScaleX = String(Yanfly.Parameters['Shadow Scale X']);
@@ -891,6 +911,7 @@ DataManager.processSVENotetags1 = function(group) {
     obj.sideviewFloatSpeed = Yanfly.Param.SVEFloatSpeed;
     obj.sideviewFloatRate = Yanfly.Param.SVEFloatRate;
     obj.sideviewFloatHeight = Yanfly.Param.SVEFloatHeight;
+    obj.sideviewFloatDeath = Yanfly.Param.SVEFloatDeath;
     obj.sideviewStateOverlay = Yanfly.Param.SVEOverlay;
 
     for (var i = 0; i < notedata.length; i++) {
@@ -968,6 +989,10 @@ DataManager.processSVENotetags1 = function(group) {
         obj.sideviewFloatRate = rate;
       } else if (line.match(/<(?:FLOATING HEIGHT):[ ](\d+)>/i)) {
         obj.sideviewFloatHeight = parseInt(RegExp.$1);
+      } else if (line.match(/<(?:FLOATING DEATH|FLOAT DEATH)>/i)) {
+        obj.sideviewFloatDeath = true;
+      } else if (line.match(/<(?:NO FLOATING DEATH|NO FLOAT DEATH)>/i)) {
+        obj.sideviewFloatDeath = false;
       } else if (line.match(/<SIDEVIEW SHOW STATE OVERLAY>/i)) {
         obj.sideviewStateOverlay = true;
       } else if (line.match(/<SIDEVIEW HIDE STATE OVERLAY>/i)) {
@@ -1312,7 +1337,7 @@ Game_Enemy.prototype.linkBreathing = function() {
 };
 
 Game_Enemy.prototype.isFloating = function() {
-    if (this.isDead()) return false;
+    if (this.isDead() && !this.enemy().sideviewFloatDeath) return false;
     return this.enemy().sideviewFloating;
 };
 
@@ -1798,4 +1823,15 @@ Yanfly.Util.getRandomElement = function(array) {
 //=============================================================================
 // End of File
 //=============================================================================
-};
+} else { // Yanfly.BEC.version
+
+var text = '================================================================\n';
+text += 'YEP_X_AnimatedSVEnemies requires YEP_BattleEngineCore to be at the ';
+text += 'latest version to run properly.\n\nPlease go to www.yanfly.moe and ';
+text += 'update to the latest version for the YEP_BattleEngineCore plugin.\n';
+text += '================================================================\n';
+console.log(text);
+require('nw.gui').Window.get().showDevTools();
+
+} // Yanfly.BEC.version
+}; // YEP_BattleEngineCore

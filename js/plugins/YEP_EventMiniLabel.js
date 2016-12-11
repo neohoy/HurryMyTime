@@ -11,7 +11,7 @@ Yanfly.EML = Yanfly.EML || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.10 Creates miniature-sized labels over events to allow
+ * @plugindesc v1.11 Creates miniature-sized labels over events to allow
  * you to insert whatever text you'd like in them.
  * @author Yanfly Engine Plugins
  *
@@ -36,6 +36,11 @@ Yanfly.EML = Yanfly.EML || {};
  * @param Y Buffer
  * @desc Alter the Y position of the label by this much.
  * @default 36
+ *
+ * @param Battle Transition
+ * @desc Show Event Mini label during battle transition?
+ * NO - false     YES - true
+ * @default false
  *
  * @help
  * ============================================================================
@@ -108,6 +113,11 @@ Yanfly.EML = Yanfly.EML || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.11:
+ * - Added 'Battle Transition' plugin parameter. Enabling this will allow you
+ * to show the Event Mini Labels during the battle transition. Keeping it
+ * disabled will hide them during the transition.
+ *
  * Version 1.10:
  * - Mini Windows will now readjust their size to show at normal scale if the
  * map is zoomed in.
@@ -161,6 +171,7 @@ Yanfly.Param.EMWMinWidth = Number(Yanfly.Parameters['Minimum Width']);
 Yanfly.Param.EMWFontSize = Number(Yanfly.Parameters['Font Size']);
 Yanfly.Param.EMWBufferX = Number(Yanfly.Parameters['X Buffer']);
 Yanfly.Param.EMWBufferY = Number(Yanfly.Parameters['Y Buffer']);
+Yanfly.Param.EMWBatTran = eval(String(Yanfly.Parameters['Battle Transition']));
 
 //=============================================================================
 // Game_System
@@ -407,6 +418,12 @@ Window_EventMiniLabel.prototype.showMiniLabel = function() {
     if (this._alwaysShow) return true;
     if (!this.withinRange()) return false;
     if (!this.meetsFacingRequirements()) return false;
+    if (!Yanfly.Param.EMWBatTran) {
+      if (SceneManager._scene._encounterEffectDuration > 0) {
+        this.contentsOpacity = 0;
+        return false;
+      }
+    }
     return $gameSystem.isShowEventMiniLabel();
 };
 

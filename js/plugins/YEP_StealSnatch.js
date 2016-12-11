@@ -8,10 +8,11 @@ Imported.YEP_StealSnatch = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.Steal = Yanfly.Steal || {};
+Yanfly.Steal.version = 1.08;
 
 //=============================================================================
  /*:
- * @plugindesc v1.07 Allows your actors to be able to steal and snatch
+ * @plugindesc v1.08 Allows your actors to be able to steal and snatch
  * items from enemies.
  * @author Yanfly Engine Plugins
  *
@@ -431,6 +432,9 @@ Yanfly.Steal = Yanfly.Steal || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.08:
+ * - Lunatic Mode fail safes added.
  *
  * Version 1.07:
  * - Fixed a bug with the <Steal Rate: +/-x%> notetags not working.
@@ -937,7 +941,12 @@ Game_Battler.prototype.afterStealEval = function(target, skill, item) {
     var b = target;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(item.afterStealEval);
+    var code = item.afterStealEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'AFTER STEAL CUSTOM EFFECT ERROR');
+    }
     user.refresh();
     target.refresh();
 };
@@ -950,7 +959,12 @@ Game_Battler.prototype.afterStealSuccessEval = function(target, skill, item) {
     var b = target;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(skill.stealSuccessEval);
+    var code = skill.stealSuccessEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'AFTER STEAL SUCCESS EFFECT ERROR');
+    }
     user.refresh();
     target.refresh();
 };
@@ -1152,7 +1166,12 @@ Game_Action.prototype.stealBonusFormula = function(target) {
     var b = target;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    rate = eval(Yanfly.Param.StealBonusFormula);
+    var code = Yanfly.Param.StealBonusFormula;
+    try {
+      rate = eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'STEAL BONUS FORMULA ERROR');
+    }
     return rate;
 };
 
@@ -1166,7 +1185,12 @@ Game_Action.prototype.customStealRateEval = function(target, stealable, rate) {
     var b = target;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(skill.stealRateEval);
+    var code = skill.stealRateEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'STEAL RATE FORMULA ERROR');
+    }
     return rate;
 };
 
@@ -1492,6 +1516,17 @@ if (!Yanfly.Util.toGroup) {
     Yanfly.Util.toGroup = function(inVal) {
         return inVal;
     }
+};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

@@ -8,10 +8,11 @@ Imported.YEP_X_PassiveAuras = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.Aura = Yanfly.Aura || {};
+Yanfly.Aura.version = 1.03;
 
 //=============================================================================
  /*:
- * @plugindesc v1.02 (Requires YEP_AutoPassiveStates.js) Add aura effects
+ * @plugindesc v1.03 (Requires YEP_AutoPassiveStates.js) Add aura effects
  * to various database objects.
  * @author Yanfly Engine Plugins
  *
@@ -178,6 +179,9 @@ Yanfly.Aura = Yanfly.Aura || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.03:
+ * - Lunatic Mode fail safes added.
  *
  * Version 1.02:
  * - Added new notetags that affect specifically alive or dead allies. Alive
@@ -457,7 +461,12 @@ Game_BattlerBase.prototype.auraStateConditionEval = function(state) {
   var target = this;
   var s = $gameSwitches._data;
   var v = $gameVariables._data;
-  eval(state.auraConditionEval);
+  var code = state.auraConditionEval;
+  try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'PASSIVE AURA CUSTOM CONDITION ERROR');
+    }
   var index = this._checkAuraStateCondition.indexOf(state.id);
   this._checkAuraStateCondition.splice(index, 1);
   return condition;
@@ -561,6 +570,19 @@ Game_Unit.prototype.auraStateTypeIds = function(type) {
 //=============================================================================
 // Utilities
 //=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
+};
 
 Yanfly.Util.removeArrayElement = function(array, element) {
   while (array.indexOf(element) >= 0) {

@@ -8,10 +8,11 @@ Imported.YEP_RowFormation = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.Row = Yanfly.Row || {};
+Yanfly.Row.version = 1.12;
 
 //=============================================================================
  /*:
- * @plugindesc v1.11 Places party members into row formations to give
+ * @plugindesc v1.12 Places party members into row formations to give
  * them distinct advantages based on row location.
  * @author Yanfly Engine Plugins
  *
@@ -708,6 +709,9 @@ Yanfly.Row = Yanfly.Row || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.12:
+ * - Lunatic Mode fail safes added.
+ *
  * Version 1.11:
  * - Updated the conditional passives for rows to occur more frequently.
  *
@@ -1147,7 +1151,12 @@ Game_BattlerBase.prototype.rowStateConditionEval = function(state) {
     var subject = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(state.rowConditionEval);
+    var code = state.rowConditionEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'ROW STATE CONDITION EVAL ERROR');
+    }
     this._checkingRowStateCondition = 0;
     return condition;
 };
@@ -1266,7 +1275,11 @@ Game_Battler.prototype.targetRowEval = function(code, user, item) {
     var currentRow = this._row;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(code);
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'TARGET ROW EVAL ERROR');
+    }
     if (currentRow !== row) this.setRow(row);
     var changed = currentRow !== this._row;
     if ($gameParty.inBattle() && changed) BattleManager.requestRefreshRows();
@@ -1284,7 +1297,11 @@ Game_Battler.prototype.userRowEval = function(code, target, item) {
     var currentRow = this._row;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(code);
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'USER ROW EVAL ERROR');
+    }
     if (currentRow !== row) this.setRow(row);
     var changed = currentRow !== this._row;
     if ($gameParty.inBattle() && changed) BattleManager.requestRefreshRows();
@@ -1586,18 +1603,54 @@ Sprite_Actor.prototype.alterActorHome = function(index) {
     var rowMembers = $gameParty.rowMembers(rowId);
     var rowIndex = this._actor.rowIndex();
     if (Imported.YEP_BattleEngineCore) {
-      var statusHeight = eval(Yanfly.Param.BECCommandRows);
+      var statusHeight = Yanfly.Param.BECCommandRows;
     } else {
       var statusHeight = 4;
     }
     statusHeight *= Window_Base.prototype.lineHeight.call(this);
     statusHeight += Window_Base.prototype.standardPadding.call(this) * 2;
-    var maxRowX = eval(Yanfly.Param.RowMaxRowX);
-    var maxRowY = eval(Yanfly.Param.RowMaxRowY);
-    var minRowY = eval(Yanfly.Param.RowMinRowY);
-    var centerY = eval(Yanfly.Param.RowCenterY);
-    var homeX = eval(Yanfly.Row.HomeX[rowId]);
-    var homeY = eval(Yanfly.Row.HomeY[rowId]);
+    var code = Yanfly.Param.RowMaxRowX;
+    try {
+      var maxRowX = eval(code);
+    } catch (e) {
+      var maxRowX = 0;
+      Yanfly.Util.displayError(e, code, 'ROW FORMATION MAX ROW X ERROR');
+    }
+    var code = Yanfly.Param.RowMaxRowY;
+    try {
+      var maxRowY = eval(code);
+    } catch (e) {
+      var maxRowY = 0;
+      Yanfly.Util.displayError(e, code, 'ROW FORMATION MAX ROW Y ERROR');
+    }
+    var code = Yanfly.Param.RowMinRowY;
+    try {
+      var minRowY = eval(code);
+    } catch (e) {
+      var minRowY = 0;
+      Yanfly.Util.displayError(e, code, 'ROW FORMATION MIN ROW Y ERROR');
+    }
+    var code = Yanfly.Param.RowCenterY;
+    try {
+      var centerY = eval(code);
+    } catch (e) {
+      var centerY = 0;
+      Yanfly.Util.displayError(e, code, 'ROW FORMATION CENTER Y ERROR');
+    }
+    var code = Yanfly.Row.HomeX[rowId];
+    try {
+      var homeX = eval(code);
+    } catch (e) {
+      var homeX = 0;
+      Yanfly.Util.displayError(e, code, 'ROW FORMATION ACTOR HOME X ERROR');
+    }
+    var code = Yanfly.Row.HomeY[rowId];
+    try {
+      var homeY = eval(code);
+    } catch (e) {
+      var homeY = 0;
+      Yanfly.Util.displayError(e, code, 'ROW FORMATION ACTOR HOME Y ERROR');
+    }
     this._homeX = homeX;
     this._homeY = homeY;
 };
@@ -1666,20 +1719,56 @@ Sprite_Enemy.prototype.setRowHomePosition = function() {
     var rowMembers = $gameTroop.rowMembers(rowId);
     var rowIndex = this._enemy.rowIndex();
     if (Imported.YEP_BattleEngineCore) {
-      var statusHeight = eval(Yanfly.Param.BECCommandRows);
+      var statusHeight = Yanfly.Param.BECCommandRows;
     } else {
       var statusHeight = 4;
     }
     statusHeight *= Window_Base.prototype.lineHeight.call(this);
     statusHeight += Window_Base.prototype.standardPadding.call(this) * 2;
-    var maxRowX = eval(Yanfly.Param.RowMaxRowX);
-    var maxRowY = eval(Yanfly.Param.RowMaxRowY);
-    var minRowY = eval(Yanfly.Param.RowMinRowY);
-    var centerY = eval(Yanfly.Param.RowCenterY);
+    var code = Yanfly.Param.RowMaxRowX;
+    try {
+      var maxRowX = eval(code);
+    } catch (e) {
+      var maxRowX = 0;
+      Yanfly.Util.displayError(e, code, 'ROW FORMATION MAX ROW X ERROR');
+    }
+    var code = Yanfly.Param.RowMaxRowY;
+    try {
+      var maxRowY = eval(code);
+    } catch (e) {
+      var maxRowY = 0;
+      Yanfly.Util.displayError(e, code, 'ROW FORMATION MAX ROW Y ERROR');
+    }
+    var code = Yanfly.Param.RowMinRowY;
+    try {
+      var minRowY = eval(code);
+    } catch (e) {
+      var minRowY = 0;
+      Yanfly.Util.displayError(e, code, 'ROW FORMATION MIN ROW Y ERROR');
+    }
+    var code = Yanfly.Param.RowCenterY;
+    try {
+      var centerY = eval(code);
+    } catch (e) {
+      var centerY = 0;
+      Yanfly.Util.displayError(e, code, 'ROW FORMATION CENTER Y ERROR');
+    }
     var screenX = this._enemy.screenX();
     var screenY = this._enemy.screenY();
-    var homeX = eval(Yanfly.Param.RowEnemyX);
-    var homeY = eval(Yanfly.Param.RowEnemyY);
+    var code = Yanfly.Param.RowEnemyX;
+    try {
+      var homeX = eval(code);
+    } catch (e) {
+      var homeX = 0;
+      Yanfly.Util.displayError(e, code, 'ROW FORMATION ENEMY HOME X ERROR');
+    }
+    var code = Yanfly.Param.RowEnemyY
+    try {
+      var homeY = eval(code);
+    } catch (e) {
+      var homeY = 0;
+      Yanfly.Util.displayError(e, code, 'ROW FORMATION ENEMY HOME Y ERROR');
+    }
     this._enemy._screenX += this._homeX - homeX;
     this._enemy._screenY += this._homeY - homeY;
 };
@@ -1707,20 +1796,56 @@ Sprite_Enemy.prototype.alterEnemyHome = function(index) {
     var rowMembers = $gameTroop.rowMembers(rowId);
     var rowIndex = this._enemy.rowIndex();
     if (Imported.YEP_BattleEngineCore) {
-      var statusHeight = eval(Yanfly.Param.BECCommandRows);
+      var statusHeight = Yanfly.Param.BECCommandRows;
     } else {
       var statusHeight = 4;
     }
     statusHeight *= Window_Base.prototype.lineHeight.call(this);
     statusHeight += Window_Base.prototype.standardPadding.call(this) * 2;
-    var maxRowX = eval(Yanfly.Param.RowMaxRowX);
-    var maxRowY = eval(Yanfly.Param.RowMaxRowY);
-    var minRowY = eval(Yanfly.Param.RowMinRowY);
-    var centerY = eval(Yanfly.Param.RowCenterY);
+    var code = Yanfly.Param.RowMaxRowX;
+    try {
+      var maxRowX = eval(code);
+    } catch (e) {
+      var maxRowX = 0;
+      Yanfly.Util.displayError(e, code, 'ROW FORMATION MAX ROW X ERROR');
+    }
+    var code = Yanfly.Param.RowMaxRowY;
+    try {
+      var maxRowY = eval(code);
+    } catch (e) {
+      var maxRowY = 0;
+      Yanfly.Util.displayError(e, code, 'ROW FORMATION MAX ROW Y ERROR');
+    }
+    var code = Yanfly.Param.RowMinRowY;
+    try {
+      var minRowY = eval(code);
+    } catch (e) {
+      var minRowY = 0;
+      Yanfly.Util.displayError(e, code, 'ROW FORMATION MIN ROW Y ERROR');
+    }
+    var code = Yanfly.Param.RowCenterY;
+    try {
+      var centerY = eval(code);
+    } catch (e) {
+      var centerY = 0;
+      Yanfly.Util.displayError(e, code, 'ROW FORMATION CENTER Y ERROR');
+    }
     var screenX = this._enemy.screenX();
     var screenY = this._enemy.screenY();
-    var homeX = eval(Yanfly.Param.RowEnemyX);
-    var homeY = eval(Yanfly.Param.RowEnemyY);
+    var code = Yanfly.Param.RowEnemyX;
+    try {
+      var homeX = eval(code);
+    } catch (e) {
+      var homeX = 0;
+      Yanfly.Util.displayError(e, code, 'ROW FORMATION ENEMY HOME X ERROR');
+    }
+    var code = Yanfly.Param.RowEnemyY
+    try {
+      var homeY = eval(code);
+    } catch (e) {
+      var homeY = 0;
+      Yanfly.Util.displayError(e, code, 'ROW FORMATION ENEMY HOME Y ERROR');
+    }
     this._homeX = homeX;
     this._homeY = homeY;
 };
@@ -1910,12 +2035,24 @@ Window_RowFormation.prototype.drawActorRowPosition = function(actor, index) {
     var img = this.getImage(actor);
     var rect = this.rowRect(index, actor.row());
     if (Yanfly.Param.RowMapSprite) {
-      var buffer = eval(Yanfly.Param.RowFrontBufferY);
+      var code = Yanfly.Param.RowFrontBufferY;
+      try {
+        var buffer = eval(code);
+      } catch (e) {
+        var buffer = 0;
+        Yanfly.Util.displayError(e, code, 'FRONT ROW Y BUFFER FORMULA ERROR');
+      }
       var wx = Math.floor(rect.x + rect.width / 2);
       var wy = Math.floor(rect.y + rect.height - buffer);
       this.drawActorCharacter(actor, wx, wy);
     } else {
-      var buffer = eval(Yanfly.Param.RowSideBufferY);
+      var code = Yanfly.Param.RowSideBufferY;
+      try {
+        var buffer = eval(code);
+      } catch (e) {
+        var buffer = 0;
+        Yanfly.Util.displayError(e, code, 'SIDE ROW Y BUFFER FORMULA ERROR');
+      }
       var wx = Math.floor(rect.x + rect.width / 2);
       var wy = Math.floor(rect.y + rect.height - buffer);
       this.drawSvActor(actor, wx, wy)
@@ -2240,8 +2377,21 @@ Scene_Battle.prototype.prepareBackground = function() {
 // Utilities
 //=============================================================================
 
+Yanfly.Util = Yanfly.Util || {};
+
 Yanfly.Util.onlyUnique = function(value, index, self) {
     return self.indexOf(value) === index;
+};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

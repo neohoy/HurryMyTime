@@ -8,10 +8,11 @@ Imported.YEP_X_SelectionControl = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.Sel = Yanfly.Sel || {};
+Yanfly.Sel.version = 1.10;
 
 //=============================================================================
  /*:
- * @plugindesc v1.09 (Requires YEP_BattleEngineCore & YEP_TargetCore.js)
+ * @plugindesc v1.10 (Requires YEP_BattleEngineCore & YEP_TargetCore.js)
  * Control what targets can and can't be selected for actions.
  * @author Yanfly Engine Plugins
  *
@@ -380,6 +381,9 @@ Yanfly.Sel = Yanfly.Sel || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.10:
+ * - Lunatic Mode fail safes added.
  *
  * Version 1.09:
  * - Fixed an exploit with skills that gain TP across Disperse Damage.
@@ -951,6 +955,7 @@ Game_Unit.prototype.filterSelection = function(members) {
 
 Game_Unit.prototype.filterTauntMembers = function(user, action, targets) {
   if (!Imported.YEP_Taunt) return targets;
+  if (!action.isForOne()) return targets;
   if (action.item().bypassTaunt) return targets;
   if (user.opponentsUnit() !== this) return targets;
   $gameTemp._tauntAction = action;
@@ -1246,7 +1251,12 @@ Game_Action.prototype.meetSelectionConditionEval = function(user, target) {
     var b = target;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(this.item().selectConditionEval);
+    var code = this.item().selectConditionEval;
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'SELECTION CONDITION EVAL');
+    }
     return condition;
 };
 
@@ -1343,7 +1353,12 @@ Game_Action.prototype.selectConditionParam = function(user, target, param, code)
     var b = target;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    return eval(code);
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'SELECTION PARAM CONDITION ERROR');
+      return false;
+    }
 };
 
 Game_Action.prototype.selectConditionNotState = function(target, text) {
@@ -1771,6 +1786,17 @@ Yanfly.Util.getCommonElements = function(array1, array2) {
       if (array2.contains(element)) elements.push(element);
     }
     return elements;
+};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

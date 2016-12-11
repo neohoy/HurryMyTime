@@ -8,10 +8,11 @@ Imported.YEP_BattleAICore = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.CoreAI = Yanfly.CoreAI || {};
+Yanfly.CoreAI.version = 1.10;
 
 //=============================================================================
  /*:
- * @plugindesc v1.09 This plugin allows you to structure battle A.I.
+ * @plugindesc v1.10 This plugin allows you to structure battle A.I.
  * patterns with more control.
  * @author Yanfly Engine Plugins
  *
@@ -387,6 +388,9 @@ Yanfly.CoreAI = Yanfly.CoreAI || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.10:
+ * - Lunatic Mode fail safes added.
+ *
  * Version 1.09:
  * - Added 'user' to the list of valid skill targets.
  * - Added 'USER stat PARAM eval' to valid conditions.
@@ -434,7 +438,9 @@ Yanfly.Parameters = PluginManager.parameters('YEP_BattleAICore');
 Yanfly.Param = Yanfly.Param || {};
 
 Yanfly.Param.CoreAIDynamic = String(Yanfly.Parameters['Dynamic Actions']);
+Yanfly.Param.CoreAIDynamic = eval(Yanfly.Param.CoreAIDynamic);
 Yanfly.Param.CoreAIElementTest = String(Yanfly.Parameters['Element Testing']);
+Yanfly.Param.CoreAIElementTest = eval(Yanfly.Param.CoreAIElementTest);
 Yanfly.Param.CoreAIDefaultLevel = Number(Yanfly.Parameters['Default AI Level']);
 
 //=============================================================================
@@ -518,7 +524,7 @@ DataManager.processCoreAINotetags4 = function(group) {
 // BattleManager
 //=============================================================================
 
-if (eval(Yanfly.Param.CoreAIDynamic)) {
+if (Yanfly.Param.CoreAIDynamic) {
   Yanfly.CoreAI.BattleManager_getNextSubject =
       BattleManager.getNextSubject;
   BattleManager.getNextSubject = function() {
@@ -569,7 +575,7 @@ Game_Battler.prototype.hasSkill = function(skillId) {
 };
 
 Game_Battler.prototype.hasState = function(stateId) {
-    return this.isStateAffected(stateId);
+    return this.states().contains($dataStates[stateId]);
 };
 
 Game_Battler.prototype.notState = function(stateId) {
@@ -692,7 +698,7 @@ Game_Troop.prototype.setup = function(troopId) {
 
 Game_Troop.prototype.aiElementRateKnown = function(target, elementId) {
     if (target.isEnemy()) return true;
-    if (!eval(Yanfly.Param.CoreAIElementTest)) return true;
+    if (!Yanfly.Param.CoreAIElementTest) return true;
     var index = target.index();
     if (this._aiKnownElementRates[index] === undefined) {
       this._aiKnownElementRates[index] = [];
@@ -701,7 +707,7 @@ Game_Troop.prototype.aiElementRateKnown = function(target, elementId) {
 };
 
 Game_Troop.prototype.aiRegisterElementRate = function(target, elementId) {
-    if (!eval(Yanfly.Param.CoreAIElementTest)) return;
+    if (!Yanfly.Param.CoreAIElementTest) return;
     var index = target.index();
     if (this._aiKnownElementRates[index] === undefined) {
       this._aiKnownElementRates[index] = [];
@@ -777,6 +783,7 @@ AIManager.isDecidedActionAI = function(line) {
       return false;
     }
     if (!this.initialCheck(this._aiSkillId)) return false;
+    if (!this.meetCustomAIConditions(this._aiSkillId)) return false;
     this.action().setSkill(this._aiSkillId);
     if (!this.passAIConditions(condition)) return false;
     return true;
@@ -809,6 +816,10 @@ AIManager.initialCheck = function(skillId) {
 
 AIManager.hasSkill = function(skillId) {
     return this.battler().hasSkill(skillId);
+};
+
+AIManager.meetCustomAIConditions = function(skillId) {
+  return true;
 };
 
 AIManager.getActionGroup = function() {
@@ -1237,7 +1248,12 @@ AIManager.conditionEval = function(condition) {
     var user = this.battler();
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    if (!eval(condition)) return false;
+    try {
+      if (!eval(condition)) return false;
+    } catch (e) {
+      Yanfly.Util.displayError(e, condition, 'A.I. EVAL ERROR');
+      return false;
+    }
     var group = this.getActionGroup();
     this.setProperTarget(group);
     return true;
@@ -1259,7 +1275,12 @@ AIManager.conditionGroupAlive = function(members, condition) {
     }
     if (members.length <= 0) return false;
     condition = 'members.length ' + condition;
-    if (!eval(condition)) return false;
+    try {
+      if (!eval(condition)) return false;
+    } catch (e) {
+      Yanfly.Util.displayError(e, condition, 'A.I. GROUP ALIVE ERROR');
+      return false;
+    }
     var group = this.getActionGroup();
     this.setProperTarget(group);
     return true;
@@ -1281,7 +1302,12 @@ AIManager.conditionGroupDead = function(members, condition) {
     }
     if (members.length <= 0) return false;
     condition = 'members.length ' + condition;
-    if (!eval(condition)) return false;
+    try {
+      if (!eval(condition)) return false;
+    } catch (e) {
+      Yanfly.Util.displayError(e, condition, 'A.I. GROUP DEAD ERROR');
+      return false;
+    }
     var group = this.getActionGroup();
     this.setProperTarget(group);
     return true;
@@ -1307,7 +1333,12 @@ AIManager.conditionPartyLevel = function(type, condition) {
     } else if (action.isForOpponent()) {
       condition = 'action.opponentsUnit()' + condition;
     }
-    if (!eval(condition)) return false;
+    try {
+      if (!eval(condition)) return false;
+    } catch (e) {
+      Yanfly.Util.displayError(e, condition, 'A.I. PARTY LEVEL ERROR');
+      return false;
+    }
     var group = this.getActionGroup();
     this.setProperTarget(group);
     return true;
@@ -1341,7 +1372,11 @@ AIManager.conditionUserParamEval = function(paramId, condition) {
     for (var i = 0; i < group.length; ++i) {
       var target = group[i];
       if (!target) continue;
-      if (eval(condition)) validTargets.push(target);
+      try {
+        if (eval(condition)) validTargets.push(target);
+      } catch (e) {
+        Yanfly.Util.displayError(e, condition, 'A.I. USER PARAM ERROR')
+      }
     }
     if (validTargets.length <= 0) return false;
     this.setProperTarget(validTargets);
@@ -1376,7 +1411,11 @@ AIManager.conditionParamEval = function(paramId, condition) {
     for (var i = 0; i < group.length; ++i) {
       var target = group[i];
       if (!target) continue;
-      if (eval(condition)) validTargets.push(target);
+      try {
+        if (eval(condition)) validTargets.push(target);
+      } catch (e) {
+        Yanfly.Util.displayError(e, condition, 'A.I. PARAM ERROR')
+      }
     }
     if (validTargets.length <= 0) return false;
     this.setProperTarget(validTargets);
@@ -1455,7 +1494,12 @@ AIManager.conditionTurnCount = function(condition) {
     } else {
       condition = '$gameTroop.turnCount() ' + condition;
     }
-    if (!eval(condition)) return false;
+    try {
+      if (!eval(condition)) return false;
+    } catch (e) {
+      Yanfly.Util.displayError(e, condition, 'A.I. TURN COUNT ERROR');
+      return false;
+    }
     var group = this.getActionGroup();
     this.setProperTarget(group);
     return true;
@@ -1468,10 +1512,32 @@ AIManager.conditionVariable = function(variableId, condition) {
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
     condition = '$gameVariables.value(' + variableId + ') ' + condition;
-    if (!eval(condition)) return false;
+    try {
+      if (!eval(condition)) return false;
+    } catch (e) {
+      Yanfly.Util.displayError(e, condition, 'A.I. VARIABLE ERROR');
+      return false;
+    }
     var group = this.getActionGroup();
     this.setProperTarget(group);
     return true;
+};
+
+//=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

@@ -8,10 +8,11 @@ Imported.YEP_HitAccuracy = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.HA = Yanfly.HA || {};
+Yanfly.HA.version = 1.02;
 
 //=============================================================================
  /*:
- * @plugindesc v1.01 This plugin alters the nature of hit accuracy for
+ * @plugindesc v1.02 This plugin alters the nature of hit accuracy for
  * RPG Maker MV by giving control to its formula.
  * @author Yanfly Engine Plugins
  *
@@ -101,6 +102,9 @@ Yanfly.HA = Yanfly.HA || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.02:
+ * - Lunatic Mode fail safes added.
+ *
  * Version 1.01:
  * - Made a correction to the calculation of the skillhitrate so that it's a
  * proper float value instead.
@@ -144,8 +148,13 @@ Game_Action.prototype.itemHit = function(target) {
     var skillHitRate = this.item().successRate * 0.01;
     var userHitRate = this.userHitRate(target);
     var targetEvadeRate = this.targetEvadeRate(target);
-    var result = eval(Yanfly.Param.HAHitFormula);
-    return result;
+    var code = Yanfly.Param.HAHitFormula;
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'CUSTOM HIT FORMULA ERROR');
+      return false;
+    }
 };
 
 Game_Action.prototype.itemEva = function(target) {
@@ -160,8 +169,13 @@ Game_Action.prototype.itemEva = function(target) {
     var skillHitRate = this.item().successRate * 0.01;
     var userHitRate = this.userHitRate(target);
     var targetEvadeRate = this.targetEvadeRate(target);
-    var result = eval(Yanfly.Param.HAEvaFormula);
-    return result;
+    var code = Yanfly.Param.HAEvaFormula;
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'CUSTOM EVA FORMULA ERROR');
+      return false;
+    }
 };
 
 Game_Action.prototype.userHitRate = function(target) {
@@ -174,11 +188,17 @@ Game_Action.prototype.userHitRate = function(target) {
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
     if (this.isPhysical()) {
-      return eval(Yanfly.Param.HAUserPhysical);
+      var code = Yanfly.Param.HAUserPhysical;
     } else if (this.isMagical()) {
-      return eval(Yanfly.Param.HAUserMagical);
+      var code = Yanfly.Param.HAUserMagical;
     } else {
-      return eval(Yanfly.Param.HAUserCertain);
+      var code = Yanfly.Param.HAUserCertain;
+    }
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'CUSTOM HIT RATE FORMULA ERROR');
+      return 0;
     }
 };
 
@@ -192,12 +212,35 @@ Game_Action.prototype.targetEvadeRate = function(target) {
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
     if (this.isPhysical()) {
-      return eval(Yanfly.Param.HATarPhysical);
+      var code = Yanfly.Param.HATarPhysical;
     } else if (this.isMagical()) {
-      return eval(Yanfly.Param.HATarMagical);
+      var code = Yanfly.Param.HATarMagical;
     } else {
-      return eval(Yanfly.Param.HATarCertain);
+      var code = Yanfly.Param.HATarCertain;
     }
+    try {
+      return eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'CUSTOM EVA RATE FORMULA ERROR');
+      return 0;
+    }
+};
+
+//=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

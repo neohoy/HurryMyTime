@@ -8,10 +8,11 @@ Imported.YEP_X_AttachAugments = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.Augment = Yanfly.Augment || {};
+Yanfly.Augment.version = 1.09;
 
 //=============================================================================
  /*:
- * @plugindesc v1.08a (Requires YEP_ItemCore.js) Players can attach and
+ * @plugindesc v1.09 (Requires YEP_ItemCore.js) Players can attach and
  * detach augments to independent equipment.
  * @author Yanfly Engine Plugins
  *
@@ -302,6 +303,24 @@ Yanfly.Augment = Yanfly.Augment || {};
  *
  * ---
  *
+ * Change Picture Hue: x
+ * Cancel Picture Hue: x
+ * - Changes/cancels the picture hue used for the item to 'x' while the
+ * augment is on the item. If an item has multiple augments that alter the
+ * picture hue, then priority is given to the first augment that alters the
+ * picture hue. This requires the plugin: Item Picture Images.
+ *
+ * ---
+ *
+ * Change Picture Image: x
+ * Cancel Picture Image: x
+ * - Changes/cancels the picture image used for the item to 'x' while the
+ * augment is on the item. If an item has multiple augments that alter the
+ * picture image, then priority is given to the first augment that alters the
+ * picture image. This requires the plugin: Item Picture Images.
+ *
+ * ---
+ *
  * Change Prefix: x
  * Cancel Prefix: x
  * - Changes/Cancels the prefix of the item to 'x' while the augment is on the
@@ -390,6 +409,9 @@ Yanfly.Augment = Yanfly.Augment || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.09:
+ * - Lunatic Mode fail safes added.
  *
  * Version 1.08a:
  * - Fixed a typo within the code. Please update Item Core, Item Disassemble,
@@ -919,6 +941,25 @@ ItemManager.processAugmentEffect = function(line, mainItem, effectItem, slot) {
     var icon = parseInt(RegExp.$1);
     return this.applyAugmentSetIcon(mainItem, icon, slot, false);
   }
+  // Imported.YEP_X_ItemPictureImg
+  if (Imported.YEP_X_ItemPictureImg) {
+    // CHANGE PICTURE IMAGE: x
+    if (line.match(/CHANGE PICTURE IMAGE:[ ](.*)/i)) {
+      var text = String(RegExp.$1).trim();
+      return this.applyAugmentSetPictureImg(mainItem, text, slot, true);
+    } else if (line.match(/CANCEL PICTURE IMAGE:[ ](.*)/i)) {
+      var text = String(RegExp.$1).trim();
+      return this.applyAugmentSetPictureImg(mainItem, text, slot, false);
+    }
+    // CHANGE ICON: x
+    if (line.match(/CHANGE PICTURE HUE:[ ](\d+)/i)) {
+      var icon = parseInt(RegExp.$1).clamp(0, 360);
+      return this.applyAugmentSetPictureHue(mainItem, icon, slot, true);
+    } else if (line.match(/CANCEL PICTURE HUE:[ ](\d+)/i)) {
+      var icon = parseInt(RegExp.$1).clamp(0, 360);
+      return this.applyAugmentSetPictureHue(mainItem, icon, slot, false);
+    }
+  } // Imported.YEP_X_ItemPictureImg
   // CHANGE TEXT COLOR: x
   if (line.match(/CHANGE TEXT COLOR:[ ](\d+)/i)) {
     var color = parseInt(RegExp.$1);
@@ -1318,7 +1359,11 @@ ItemManager.processAugmentEval = function(code, item, effectItem, slotId) {
     var baseArmor = baseArmor;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    eval(code);
+    try {
+      eval(code);
+    } catch (e) {
+      Yanfly.Util.displayError(e, code, 'ATTACH AUGMENT CUSTOM EFFECT ERROR');
+    }
 };
 
 //=============================================================================
@@ -1643,6 +1688,23 @@ Scene_Item.prototype.onAugmentListCancel = function() {
     this._itemActionWindow.activate();
     this._helpWindow.setItem(this.item());
     this._augmentListWindow.select(0);
+};
+
+//=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

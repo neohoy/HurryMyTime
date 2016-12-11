@@ -8,10 +8,11 @@ Imported.YEP_AutoPassiveStates = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.APS = Yanfly.APS || {};
+Yanfly.APS.version = 1.13;
 
 //=============================================================================
  /*:
- * @plugindesc v1.12 This plugin allows for some states to function as
+ * @plugindesc v1.13 This plugin allows for some states to function as
  * passives for actors, enemies, skills, and equips.
  * @author Yanfly Engine Plugins
  *
@@ -115,6 +116,9 @@ Yanfly.APS = Yanfly.APS || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.13:
+ * - Lunatic Mode fail safes added.
  *
  * Version 1.12:
  * - Implemented <Custom Passive Condition> to now affect passive state ID's
@@ -412,37 +416,47 @@ Game_BattlerBase.prototype.meetPassiveStateCondition = function(stateId) {
 };
 
 Game_BattlerBase.prototype.passiveStateConditions = function(state) {
-    this._checkPassiveStateCondition = this._checkPassiveStateCondition || [];
-    this._checkPassiveStateCondition.push(state.id);
-    var condition = true;
-    var a = this;
-    var user = this;
-    var subject = this;
-    var b = this;
-    var target = this;
-    var s = $gameSwitches._data;
-    var v = $gameVariables._data;
-    eval(state.passiveCondition);
-    var index = this._checkPassiveStateCondition.indexOf(state.id);
-    this._checkPassiveStateCondition.splice(index, 1);
-    return condition;
+  this._checkPassiveStateCondition = this._checkPassiveStateCondition || [];
+  this._checkPassiveStateCondition.push(state.id);
+  var condition = true;
+  var a = this;
+  var user = this;
+  var subject = this;
+  var b = this;
+  var target = this;
+  var s = $gameSwitches._data;
+  var v = $gameVariables._data;
+  var code = state.passiveCondition;
+  try {
+    eval(code);
+  } catch (e) {
+    Yanfly.Util.displayError(e, code, 'PASSIVE STATE CUSTOM CONDITION ERROR');
+  }
+  var index = this._checkPassiveStateCondition.indexOf(state.id);
+  this._checkPassiveStateCondition.splice(index, 1);
+  return condition;
 };
 
 Game_BattlerBase.prototype.passiveStateConditionEval = function(state) {
-    this._checkPassiveStateCondition = this._checkPassiveStateCondition || [];
-    this._checkPassiveStateCondition.push(state.id);
-    var condition = true;
-    var a = this;
-    var user = this;
-    var subject = this;
-    var b = this;
-    var target = this;
-    var s = $gameSwitches._data;
-    var v = $gameVariables._data;
-    eval(state.passiveConditionEval);
-    var index = this._checkPassiveStateCondition.indexOf(state.id);
-    this._checkPassiveStateCondition.splice(index, 1);
-    return condition;
+  this._checkPassiveStateCondition = this._checkPassiveStateCondition || [];
+  this._checkPassiveStateCondition.push(state.id);
+  var condition = true;
+  var a = this;
+  var user = this;
+  var subject = this;
+  var b = this;
+  var target = this;
+  var s = $gameSwitches._data;
+  var v = $gameVariables._data;
+  var code = state.passiveConditionEval;
+  try {
+    eval(code);
+  } catch (e) {
+    Yanfly.Util.displayError(e, code, 'PASSIVE STATE CUSTOM CONDITION ERROR');
+  }
+  var index = this._checkPassiveStateCondition.indexOf(state.id);
+  this._checkPassiveStateCondition.splice(index, 1);
+  return condition;
 };
 
 Game_BattlerBase.prototype.sortPassiveStates = function(array) {
@@ -566,6 +580,17 @@ Game_Player.prototype.refresh = function() {
 //=============================================================================
 
 Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
+};
 
 Yanfly.Util.getRange = function(n, m) {
     var result = [];
