@@ -8,11 +8,11 @@ Imported.YEP_RowFormation = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.Row = Yanfly.Row || {};
-Yanfly.Row.version = 1.12;
+Yanfly.Row.version = 1.13;
 
 //=============================================================================
  /*:
- * @plugindesc v1.12 Places party members into row formations to give
+ * @plugindesc v1.13 Places party members into row formations to give
  * them distinct advantages based on row location.
  * @author Yanfly Engine Plugins
  *
@@ -708,6 +708,10 @@ Yanfly.Row.version = 1.12;
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.13:
+ * - Bug fixed where setting an actor's home position didn't mark their
+ * original index value.
  *
  * Version 1.12:
  * - Lunatic Mode fail safes added.
@@ -1585,7 +1589,7 @@ Sprite_Battler.prototype.setHome = function(x, y) {
 Yanfly.Row.Sprite_Actor_setActorHome = Sprite_Actor.prototype.setActorHome;
 Sprite_Actor.prototype.setActorHome = function(index) {
     if (!$gameSystem.isSideView()) {
-      return Yanfly.Row.Sprite_Actor_setActorHome.call(this);
+      return Yanfly.Row.Sprite_Actor_setActorHome.call(this, index);
     }
     this.alterActorHome(index);
     this.setHome(this._homeX, this._homeY);

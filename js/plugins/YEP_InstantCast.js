@@ -8,11 +8,11 @@ Imported.YEP_InstantCast = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.Instant = Yanfly.Instant || {};
-Yanfly.Instant.version = 1.09;
+Yanfly.Instant.version = 1.10;
 
 //=============================================================================
  /*:
- * @plugindesc v1.09 Allows skills/items to be instantly cast after being
+ * @plugindesc v1.10 Allows skills/items to be instantly cast after being
  * selected in the battle menu.
  * @author Yanfly Engine Plugins
  *
@@ -149,6 +149,9 @@ Yanfly.Instant.version = 1.09;
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.10:
+ * - Compatibility update for future plugins.
  *
  * Version 1.09:
  * - Lunatic Mode fail safes added.
@@ -317,6 +320,9 @@ BattleManager.performInstantCast = function() {
     }
     this._subject = BattleManager.actor();
     this._instantCasting = true;
+    if (Imported.YEP_BattleEngineCore && BattleManager.isDTB()) {
+      this._ignoreTurnOrderFirstIndex = true;
+    }
     this.startAction();
 };
 
@@ -338,6 +344,9 @@ BattleManager.endAction = function() {
 };
 
 BattleManager.endActorInstantCast = function() {
+    if (Imported.YEP_BattleEngineCore && BattleManager.isDTB()) {
+      this._ignoreTurnOrderFirstIndex = false;
+    }
     var user = this._subject;
     if (Imported.YEP_BattleEngineCore) {
       if (this._processingForcedAction) this._phase = this._preForcePhase;
@@ -356,7 +365,10 @@ BattleManager.endActorInstantCast = function() {
       user.makeActions();
       this.selectNextCommand();
     }
-    this.refreshStatus()
+    this.refreshStatus();
+    if (Imported.YEP_BattleEngineCore && BattleManager.isDTB()) {
+      this._subject = undefined;
+    }
 };
 
 BattleManager.endEnemyInstantCastAction = function() {

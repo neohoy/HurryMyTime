@@ -8,11 +8,11 @@ Imported.YEP_SaveCore = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.Save = Yanfly.Save || {};
-Yanfly.Save.version = 1.03;
+Yanfly.Save.version = 1.04;
 
 //=============================================================================
  /*:
- * @plugindesc v1.03 Alter the save menu for a more aesthetic layout
+ * @plugindesc v1.04 Alter the save menu for a more aesthetic layout
  * and take control over the file system's rules.
  * @author Yanfly Engine Plugins
  *
@@ -111,6 +111,11 @@ Yanfly.Save.version = 1.03;
  * @param Empty Game Text
  * @desc Text used when the save is empty.
  * @default Empty
+ *
+ * @param Map Display Name
+ * @desc Use the display name for the saved map instead?
+ * NO - false     YES - true
+ * @default true
  *
  * @param Party Display
  * @desc The display type used for the party.
@@ -372,6 +377,10 @@ Yanfly.Save.version = 1.03;
  * Changelog
  * ============================================================================
  *
+ * Version 1.04:
+ * - Added 'Map Display Name' plugin parameter. Enabling this option will now
+ * display the display name for the map instead of the editor name.
+ *
  * Version 1.03:
  * - Fixed a bug that caused web saving to not work properly.
  *
@@ -421,6 +430,8 @@ Yanfly.Param.SaveInfoTitle = String(Yanfly.Parameters['Show Game Title']);
 Yanfly.Param.SaveInfoTitle = eval(Yanfly.Param.SaveInfoTitle);
 Yanfly.Param.SaveInfoInvalid = String(Yanfly.Parameters['Invalid Game Text']);
 Yanfly.Param.SaveInfoEmpty = String(Yanfly.Parameters['Empty Game Text']);
+Yanfly.Param.SaveMapDisplayName = String(Yanfly.Parameters['Map Display Name']);
+Yanfly.Param.SaveMapDisplayName = eval(Yanfly.Param.SaveMapDisplayName);
 Yanfly.Param.SaveInfoPartyType = Number(Yanfly.Parameters['Party Display']);
 Yanfly.Param.SaveInfoPartyType = Yanfly.Param.SaveInfoPartyType.clamp(0, 3);
 Yanfly.Param.SaveInfoPartyY = String(Yanfly.Parameters['Party Y Position']);
@@ -494,6 +505,13 @@ DataManager.selectSavefileForNewGame = function() {
     Yanfly.Save.DataManager_selectSavefileForNewGame.call(this);
     if (Yanfly.Param.SaveAutoIndex) return;
     this._lastAccessedId = 1;
+};
+
+Yanfly.Save.DataManager_makeSaveContents = DataManager.makeSaveContents;
+DataManager.makeSaveContents = function() {
+  var contents = Yanfly.Save.DataManager_makeSaveContents.call(this);
+  contents.map.locationDisplayName = $dataMap.displayName;
+  return contents;
 };
 
 //=============================================================================
@@ -961,7 +979,12 @@ Window_SaveInfo.prototype.drawData = function(data, dx, dy, dw) {
 
 Window_SaveInfo.prototype.drawLocation = function(dx, dy, dw) {
     var id = this._saveContents.map._mapId;
-    var text = $dataMapInfos[id].name;
+    if (Yanfly.Param.SaveMapDisplayName) {
+      var text = this._saveContents.map.locationDisplayName || '';
+      if (text.length <= 0) text = $dataMapInfos[id].name;
+    } else {
+      var text = $dataMapInfos[id].name;
+    }
     if (Yanfly.Param.SaveVocabLocation.length > 0) {
       this.changeTextColor(this.systemColor());
       this.drawText(Yanfly.Param.SaveVocabLocation, dx, dy, dw, 'left');

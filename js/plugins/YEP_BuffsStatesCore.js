@@ -8,11 +8,11 @@ Imported.YEP_BuffsStatesCore = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.BSC = Yanfly.BSC || {};
-Yanfly.BSC.version = 1.12;
+Yanfly.BSC.version = 1.13;
 
 //=============================================================================
  /*:
- * @plugindesc v1.12 Alter the basic mechanics behind buffs and states
+ * @plugindesc v1.13 Alter the basic mechanics behind buffs and states
  * that aren't adjustable within the RPG Maker editor.
  * @author Yanfly Engine Plugins
  *
@@ -560,8 +560,12 @@ Yanfly.BSC.version = 1.12;
  * Changelog
  * ============================================================================
  *
- * Version 1.12:
+ * Version 1.13:
+ * - Custom Turn End effects will no longer occur outside of battle.
+ *
+ * Version 1.12a:
  * - Lunatic Mode fail safes added.
+ * - Optimization update.
  *
  * Version 1.11:
  * - Fixed a bug involving Lunatic state effects not occuring in the right
@@ -1363,6 +1367,7 @@ Game_Battler.prototype.onTurnEnd = function() {
 };
 
 Game_Battler.prototype.meetTurnEndStateEffectsConditions = function() {
+    if (!$gameParty.inBattle()) return false;
     if (Imported.YEP_BattleEngineCore) {
       if (BattleManager.isTurnBased()) {
         return true;
@@ -1521,6 +1526,7 @@ Game_Unit.prototype.processStateEval = function(type) {
     for (var i = 0; i < length1; ++i) {
       var member = this.allMembers()[i];
       if (!member) return;
+      member.refresh();
       var states = member.states();
       var length2 = states.length;
       for (var j = 0; j < length2; ++j) {

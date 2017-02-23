@@ -8,10 +8,11 @@ Imported.YEP_SaveEventLocations = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.SEL = Yanfly.SEL || {};
+Yanfly.SEL.version = 1.05;
 
 //=============================================================================
  /*:
- * @plugindesc v1.04 Enable specified maps to memorize the locations of
+ * @plugindesc v1.05 Enable specified maps to memorize the locations of
  * events when leaving and loading them upon reentering map.
  * @author Yanfly Engine Plugins
  *
@@ -49,11 +50,16 @@ Yanfly.SEL = Yanfly.SEL || {};
  * ============================================================================
  *
  * Plugin Command
- *   ResetAllEventLocations    This resets all the event locations on the map.
+ *   ResetAllEventLocations
+ *   - This resets all the event locations on the map.
  *
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.05:
+ * - Fixed a bug where if an event whose location is to be saved starts with a
+ * direction other than down, the direction would be overwritten when loaded.
  *
  * Version 1.04:
  * - Updated the <Save Event Location> to save an event's direction even if it
@@ -225,7 +231,17 @@ Game_Event.prototype.loadLocation = function() {
     var y = $gameSystem.getSavedEventY($gameMap.mapId(), this.eventId());
     this.setPosition(x, y);
     var dir = $gameSystem.getSavedEventDir($gameMap.mapId(), this.eventId());
-    this.setDirection(dir);
+    $gameTemp._loadLocationDirection = dir;
+};
+
+Yanfly.SEL.Game_Event_setupPageSettings =
+  Game_Event.prototype.setupPageSettings;
+Game_Event.prototype.setupPageSettings = function() {
+  Yanfly.SEL.Game_Event_setupPageSettings.call(this);
+  if ($gameTemp._loadLocationDirection) {
+    this.setDirection($gameTemp._loadLocationDirection);
+    $gameTemp._loadLocationDirection = undefined;
+  }
 };
 
 Game_Event.prototype.resetLocation = function() {

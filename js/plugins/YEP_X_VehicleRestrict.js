@@ -80,7 +80,7 @@ Yanfly.VR = Yanfly.VR || {};
  * This plugin expands region restrictions (and allowed regions) to vehicles.
  * On top of that, you can designate specific regions for vehicles to land in.
  * This way, you can make it so that small boats cannot traverse certain bodies
- * of watever, land in only certain spots, etc. that ships can or vice versa!
+ * of water, land in only certain spots, etc. that ships can or vice versa!
  * Add a bit more variety to the way vehicles are handled for your game!
  *
  * ============================================================================

@@ -8,10 +8,11 @@ Imported.YEP_X_VisualStateFX = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.VSFX = Yanfly.VSFX || {};
+Yanfly.VSFX.version = 1.02;
 
 //=============================================================================
  /*:
- * @plugindesc v1.01 (Req YEP_BattleEngineCore & YEP_BuffsStatesCore) Adds
+ * @plugindesc v1.02 (Req YEP_BattleEngineCore & YEP_BuffsStatesCore) Adds
  * visual effects to your states.
  * @author Yanfly Engine Plugins
  *
@@ -134,6 +135,10 @@ Yanfly.VSFX = Yanfly.VSFX || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.02:
+ * - Fixed a bug where enemy icon settings would match actor icon settings
+ * regardless of the settings made in the plugin parameters.
+ *
  * Version 1.01:
  * - State animations are now adjusted to fit the opacity of the battler.
  *
@@ -161,7 +166,7 @@ Yanfly.Param.VSFXActorAni = eval(Yanfly.Param.VSFXActorAni);
 Yanfly.Param.VSFXEnemyOver = String(Yanfly.Parameters['Enemy State Overlay']);
 Yanfly.Param.VSFXEnemyOver = eval(Yanfly.Param.VSFXEnemyOver);
 Yanfly.Param.VSFXEnemyIcons = String(Yanfly.Parameters['Enemy State Icons']);
-Yanfly.Param.VSFXEnemyIcons = eval(Yanfly.Param.VSFXActorIcons);
+Yanfly.Param.VSFXEnemyIcons = eval(Yanfly.Param.VSFXEnemyIcons);
 Yanfly.Param.VSFXEnemyAni = String(Yanfly.Parameters['Enemy State Animation']);
 Yanfly.Param.VSFXEnemyAni = eval(Yanfly.Param.VSFXEnemyAni);
 

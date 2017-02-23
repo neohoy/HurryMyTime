@@ -12,7 +12,7 @@ Yanfly.Counter.version = 1.07;
 
 //=============================================================================
  /*:
- * @plugindesc v1.07 (Requires YEP_BattleEngineCore.js) Gives you more
+ * @plugindesc v1.07a (Requires YEP_BattleEngineCore.js) Gives you more
  * control over how counters work in RPG Maker MV!
  * @author Yanfly Engine Plugins
  *
@@ -670,8 +670,9 @@ Yanfly.Counter.version = 1.07;
  * Changelog
  * ============================================================================
  *
- * Version 1.07:
+ * Version 1.07a:
  * - Lunatic Mode fail safes added.
+ * - Optimization update
  * 
  * Version 1.06:
  * - Updated for RPG Maker MV version 1.3.2.
@@ -1207,7 +1208,7 @@ BattleManager.checkCounterEval = function(code, skill, subject, target) {
     var item = skill;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
-    var code = line;
+    var code = code;
     try {
       return eval(code);
     } catch (e) {

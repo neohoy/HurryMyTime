@@ -8,11 +8,11 @@ Imported.YEP_BattleAICore = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.CoreAI = Yanfly.CoreAI || {};
-Yanfly.CoreAI.version = 1.10;
+Yanfly.CoreAI.version = 1.12;
 
 //=============================================================================
  /*:
- * @plugindesc v1.10 This plugin allows you to structure battle A.I.
+ * @plugindesc v1.12 This plugin allows you to structure battle A.I.
  * patterns with more control.
  * @author Yanfly Engine Plugins
  *
@@ -20,6 +20,11 @@ Yanfly.CoreAI.version = 1.10;
  * @desc If enabled, enemy actions are decided on the spot instead
  * of at the start of turn.   NO - false     YES - true
  * @default true
+ *
+ * @param Dynamic Turn Count
+ * @desc Decide if the turn count dynamic is counted for earlier or later.
+ * true - Current Turn + 1   false - Current Turn
+ * @default false
  *
  * @param Element Testing
  * @desc If enabled, enemies will test actors on their elements by
@@ -205,7 +210,6 @@ Yanfly.CoreAI.version = 1.10;
  * Example:   HP% param <= 50%: Heal, Lowest HP%
  *            MP param > 90: Mana Drain, Highest MP
  *            ATK param > user.atk: Power Break, Highest ATK
- *            LEVEL param > 10 && target.notState(5): Blind, Random
  * =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
  *
  * =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -290,7 +294,6 @@ Yanfly.CoreAI.version = 1.10;
  * Example:   User HP% param <= 50%: Heal, Lowest HP%
  *            User MP param > 90: Mana Drain, Highest MP
  *            User ATK param > user.atk: Power Break, Highest ATK
- *            User LEVEL param > 10 && target.notState(5): Blind, Random
  * =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
  *
  * =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -304,6 +307,46 @@ Yanfly.CoreAI.version = 1.10;
  *            Variable 5 <= 100: Skill 11, Highest HP%
  *            Variable 2 === user.atk: Skill 12
  * =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+ *
+ * ============================================================================
+ * Multiple Conditions
+ * ============================================================================
+ *
+ * As of the version 1.11 update, the Battle A.I. Core is now able to support
+ * multiple conditions. Setting up multiple conditions is relatively simple to
+ * do and still follows the 'condition: SKILL x, target' format.
+ *
+ * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ *
+ * To add multiple conditions, simply insert a +++ between each condition like
+ * the following examples:
+ *
+ *     Switch 1 on +++ Switch 2 on: Fire, Lowest HP%
+ *     Turn 3 > 1 +++ Variable 5 <= 100 +++ Switch 3 on: Ice, Lowest HP%
+ *     Random 50% +++ Highest Party Level > 50: Thunder, Highest HP%
+ *
+ * In the above examples, all the conditions must be met in order for the
+ * selected skills to be considered for use.
+ *
+ * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ *
+ * For conditions that have strict targeting groups, the targeting group will
+ * end up becoming the combination of all of the strict targeting groups. For
+ * example:
+ *
+ *     STATE === Blind +++ STATE === Fear: Dark, Lowest HP%
+ *
+ * In this example, the enemy will only use the 'Dark' skill on a target that
+ * is both affected by 'Blind' and 'Fear'. If there are multiple targets, then
+ * the target with the lowest HP% will become the target the enemy will cast
+ * the 'Dark' on.
+ *
+ *     STATE !== Blind +++ ATK param >= 150: Darkness, Highest ATK
+ *
+ * In the above example, the enemy will use the 'Darkness' skill against any
+ * target that isn't blinded and has an ATK parameter of at least 150. If there
+ * are multiple targets, then the enemy will first cast 'Darkness' on the
+ * target with the highest ATK before casting it on a target with a lower ATK.
  *
  * ============================================================================
  * Targeting
@@ -388,6 +431,15 @@ Yanfly.CoreAI.version = 1.10;
  * Changelog
  * ============================================================================
  *
+ * Version 1.12:
+ * - Added 'Dynamic Turn Count' plugin parameter for those who wish to push the
+ * turn count further by 1 turn in order to adjust for Dynamic Actions. Code
+ * provided by Talonos.
+ *
+ * Version 1.11:
+ * - Adding the ability to support multiple conditions. Please Read the
+ * 'Multiple Conditions' section in the help file for more details.
+ *
  * Version 1.10:
  * - Lunatic Mode fail safes added.
  *
@@ -439,6 +491,8 @@ Yanfly.Param = Yanfly.Param || {};
 
 Yanfly.Param.CoreAIDynamic = String(Yanfly.Parameters['Dynamic Actions']);
 Yanfly.Param.CoreAIDynamic = eval(Yanfly.Param.CoreAIDynamic);
+Yanfly.Param.CoreAIDynTurnCnt = String(Yanfly.Parameters['Dynamic Turn Count']);
+Yanfly.Param.CoreAIDynTurnCnt = eval(Yanfly.Param.CoreAIDynTurnCnt);
 Yanfly.Param.CoreAIElementTest = String(Yanfly.Parameters['Element Testing']);
 Yanfly.Param.CoreAIElementTest = eval(Yanfly.Param.CoreAIElementTest);
 Yanfly.Param.CoreAIDefaultLevel = Number(Yanfly.Parameters['Default AI Level']);
@@ -785,7 +839,7 @@ AIManager.isDecidedActionAI = function(line) {
     if (!this.initialCheck(this._aiSkillId)) return false;
     if (!this.meetCustomAIConditions(this._aiSkillId)) return false;
     this.action().setSkill(this._aiSkillId);
-    if (!this.passAIConditions(condition)) return false;
+    if (!this.passAllAIConditions(condition)) return false;
     return true;
 };
 
@@ -823,32 +877,41 @@ AIManager.meetCustomAIConditions = function(skillId) {
 };
 
 AIManager.getActionGroup = function() {
-    var action = this.action();
-    if (Imported.YEP_X_SelectionControl) action.setSelectionFilter(true);
-    if (!action) return [];
-    if (action.isForUser()) {
-      var group = [this.battler()];
-    } else if (action.isForDeadFriend()) {
-      var group = action.friendsUnit().deadMembers();
-    } else if (action.isForFriend()) {
-      var group = action.friendsUnit().aliveMembers();
-    } else if (action.isForOpponent()) {
-      if (this.battler().aiConsiderTaunt()) {
-        $gameTemp._tauntMode = true;
-        $gameTemp._tauntAction = action;
-        var group = action.opponentsUnit().tauntMembers();
-        $gameTemp._tauntMode = false;
-        $gameTemp._tauntAction = undefined;
-      } else {
-        var group = action.opponentsUnit().aliveMembers();
-      }
+  var action = this.action();
+  if (Imported.YEP_X_SelectionControl) action.setSelectionFilter(true);
+  if (!action) return [];
+  if (action.isForUser()) {
+    var group = [this.battler()];
+  } else if (action.isForDeadFriend()) {
+    var group = action.friendsUnit().deadMembers();
+  } else if (action.isForFriend()) {
+    var group = action.friendsUnit().aliveMembers();
+  } else if (action.isForOpponent()) {
+    if (this.battler().aiConsiderTaunt()) {
+      $gameTemp._tauntMode = true;
+      $gameTemp._tauntAction = action;
+      var group = action.opponentsUnit().tauntMembers();
+      $gameTemp._tauntMode = false;
+      $gameTemp._tauntAction = undefined;
     } else {
-      var group = [];
+      var group = action.opponentsUnit().aliveMembers();
     }
-    return group;
+  } else {
+    var group = [];
+  }
+  if (this._setActionGroup !== undefined) {
+    group = Yanfly.Util.getCommonElements(this._setActionGroup, group);
+  }
+  this._setActionGroup = group;
+  return this._setActionGroup;
+};
+
+AIManager.setActionGroup = function(group) {
+  this._setActionGroup = group;
 };
 
 AIManager.setProperTarget = function(group) {
+    this.setActionGroup(group);
     var action = this.action();
     var randomTarget = group[Math.floor(Math.random() * group.length)];
     if (!randomTarget) return action.setTarget(0);
@@ -1134,6 +1197,17 @@ AIManager.elementRateMatch = function(target, elementId, type) {
       return rate < 0.00;
     }
     return false;
+};
+
+AIManager.passAllAIConditions = function(line) {
+  this._setActionGroup = undefined;
+  var conditions = line.split('+++');
+  if (conditions.length <= 0) return false;
+  while (conditions.length > 0) {
+    var condition = conditions.shift().trim();
+    if (!this.passAIConditions(condition)) return false;
+  }
+  return true;
 };
 
 AIManager.passAIConditions = function(line) {
@@ -1483,6 +1557,8 @@ AIManager.conditionSwitch = function(switchId, value) {
     return true;
 };
 
+if (!Yanfly.Param.CoreAIDynTurnCnt) {
+
 AIManager.conditionTurnCount = function(condition) {
     var action = this.action();
     var item = action.item();
@@ -1504,6 +1580,42 @@ AIManager.conditionTurnCount = function(condition) {
     this.setProperTarget(group);
     return true;
 };
+
+} else {
+// Alternative provided by Talonos
+
+AIManager.conditionTurnCount = function(condition) {
+    var action = this.action();
+    var item = action.item();
+    var user = this.battler();
+    var s = $gameSwitches._data;
+    var v = $gameVariables._data;
+    if (Imported.YEP_BattleEngineCore) {
+      if (BattleManager._phase === "input" && BattleManager.isTurnBased()) {
+        condition = '(user.turnCount() + 1) ' + condition;
+      } else {
+        condition = 'user.turnCount() ' + condition;
+      }
+    } else {
+      if (BattleManager._phase === "input") {
+        condition = '($gameTroop.turnCount() + 1) ' + condition;
+      } else {
+        condition = '$gameTroop.turnCount() ' + condition;
+      }
+    }
+    try {
+      if (!eval(condition)) return false;
+    } catch (e) {
+      Yanfly.Util.displayError(e, condition, 'A.I. TURN COUNT ERROR');
+      return false;
+    }
+    var group = this.getActionGroup();
+    this.setProperTarget(group);
+    return true;
+};
+
+} // Yanfly.Param.CoreAIDynamic
+
 
 AIManager.conditionVariable = function(variableId, condition) {
     var action = this.action();
@@ -1538,6 +1650,16 @@ Yanfly.Util.displayError = function(e, code, message) {
       require('nw.gui').Window.get().showDevTools();
     }
   }
+};
+
+Yanfly.Util.getCommonElements = function(array1, array2) {
+  var elements = [];
+  var length = array1.length;
+  for (var i = 0; i < length; ++i) {
+    var element = array1[i];
+    if (array2.contains(element)) elements.push(element);
+  }
+  return elements;
 };
 
 //=============================================================================

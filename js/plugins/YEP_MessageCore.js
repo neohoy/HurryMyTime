@@ -8,10 +8,11 @@ Imported.YEP_MessageCore = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.Message = Yanfly.Message || {};
+Yanfly.Message.version = 1.18;
 
 //=============================================================================
  /*:
- * @plugindesc v1.17 Adds more features to the Message Window to customized
+ * @plugindesc v1.18 Adds more features to the Message Window to customized
  * the way your messages appear and functions.
  * @author Yanfly Engine Plugins
  *
@@ -69,6 +70,16 @@ Yanfly.Message = Yanfly.Message || {};
  * @desc This is the default font used for the Message Window.
  * Default: GameFont
  * @default GameFont
+ *
+ * @param Font Name CH
+ * @desc This is the default font used for the Message Window for Chinese.
+ * Default: SimHei, Heiti TC, sans-serif
+ * @default SimHei, Heiti TC, sans-serif
+ *
+ * @param Font Name KR
+ * @desc This is the default font used for the Message Window for Korean.
+ * Default: Dotum, AppleGothic, sans-serif
+ * @default Dotum, AppleGothic, sans-serif
  *
  * @param Font Size
  * @desc This is the default font size used for the Message Window.
@@ -310,6 +321,9 @@ Yanfly.Message = Yanfly.Message || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.18:
+ * - Added new plugin parameters: 'Font Name CH' and 'Font Name KR'.
+ *
  * Version 1.17:
  * - Compatibility update with Message Macros for 'Name Box Auto Close' option.
  *
@@ -402,11 +416,14 @@ Yanfly.Param.MSGFaceIndent = String(Yanfly.Parameters['Face Indent']);
 Yanfly.Param.MSGFastForwardKey = String(Yanfly.Parameters['Fast Forward Key']);
 Yanfly.Param.MSGFFOn = eval(String(Yanfly.Parameters['Enable Fast Forward']));
 Yanfly.Param.MSGWordWrap = String(Yanfly.Parameters['Word Wrapping']);
+Yanfly.Param.MSGWordWrap = eval(Yanfly.Param.MSGWordWrap);
 Yanfly.Param.MSGDescWrap = String(Yanfly.Parameters['Description Wrap']);
 Yanfly.Param.MSGWrapSpace = eval(String(Yanfly.Parameters['Word Wrap Space']));
 Yanfly.Param.MSGTightWrap = eval(String(Yanfly.Parameters['Tight Wrap']));
 
 Yanfly.Param.MSGFontName = String(Yanfly.Parameters['Font Name']);
+Yanfly.Param.MSGCNFontName = String(Yanfly.Parameters['Font Name CH']);
+Yanfly.Param.MSGKRFontName = String(Yanfly.Parameters['Font Name KR']);
 Yanfly.Param.MSGFontSize = Number(Yanfly.Parameters['Font Size']);
 Yanfly.Param.MSGFontSizeChange = String(Yanfly.Parameters['Font Size Change']);
 Yanfly.Param.MSGFontChangeMax = String(Yanfly.Parameters['Font Changed Max']);
@@ -451,12 +468,18 @@ Game_System.prototype.initialize = function() {
 };
 
 Game_System.prototype.initMessageSystem = function() {
-    this._wordWrap = eval(Yanfly.Param.MSGWordWrap);
+    this._wordWrap = Yanfly.Param.MSGWordWrap;
     this._fastForward = Yanfly.Param.MSGFFOn;
 };
 
 Game_System.prototype.initMessageFontSettings = function() {
-    this._msgFontName = Yanfly.Param.MSGFontName;
+    if ($dataSystem.locale.match(/^zh/)) {
+      this._msgFontName = Yanfly.Param.MSGCNFontName;
+    } else if ($dataSystem.locale.match(/^ko/)) {
+      this._msgFontName = Yanfly.Param.MSGKRFontName;
+    } else {
+      this._msgFontName = Yanfly.Param.MSGFontName;
+    }
     this._msgFontSize = Yanfly.Param.MSGFontSize;
     this._msgFontOutline = Yanfly.Param.MSGFontOutline;
 };

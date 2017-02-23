@@ -541,7 +541,7 @@ Yanfly.ATB.version = 1.25;
 
 if (Imported.YEP_BattleEngineCore) {
 
-  if (Yanfly.BEC.version && Yanfly.BEC.version >= 1.42) {
+if (Yanfly.BEC.version && Yanfly.BEC.version >= 1.42) {
 
 //=============================================================================
 // Parameter Variables

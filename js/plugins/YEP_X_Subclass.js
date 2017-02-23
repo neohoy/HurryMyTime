@@ -808,7 +808,7 @@ Game_Actor.prototype.setCanChangeSubclass = function(value) {
 Yanfly.Subclass.Game_Interpreter_pluginCommand =
     Game_Interpreter.prototype.pluginCommand;
 Game_Interpreter.prototype.pluginCommand = function(command, args) {
-    Yanfly.Subclass.Game_Interpreter_pluginCommand.call(this, command, args)
+    Yanfly.Subclass.Game_Interpreter_pluginCommand.call(this, command, args);
     if (command === 'ShowSubclass') {
       $gameSystem._showSubclass = true;
     } else if (command === 'HideSubclass') {

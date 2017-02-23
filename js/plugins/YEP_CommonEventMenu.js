@@ -8,10 +8,11 @@ Imported.YEP_CommonEventMenu = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.CEM = Yanfly.CEM || {};
+Yanfly.CEM.version = 1.02;
 
 //=============================================================================
  /*:
- * @plugindesc v1.02 This plugin allows the creation of windows to call
+ * @plugindesc v1.02a This plugin allows the creation of windows to call
  * common events with.
  * @author Yanfly Engine Plugins
  *
@@ -190,7 +191,7 @@ Yanfly.CEM = Yanfly.CEM || {};
  *
  *    SetCommonEventMenuSettings Default Setup
  *    ClearCommonEventMenu
- *    AddCommonEventMenu 1 2 3 4 5
+ *    AddCommonEventMenu 1, 2, 3, 4, 5
  *    SetCommonEventMenuCancel 0
  *    OpenCommonEventMenu
  *
@@ -420,9 +421,10 @@ Yanfly.CEM = Yanfly.CEM || {};
  * Changelog
  * ============================================================================
  *
- * Version 1.02:
+ * Version 1.02a:
  * - Added 'EnableCommonEventMenuCancel' and 'EnableCommonEventMenuConfirm' for
  * users who don't wish to clear out their whole common event menu.
+ * - Documentation fix.
  *
  * Version 1.01:
  * - Added 'DisableCommonEventMenuConfirm' plugin command for those who wish to
@@ -865,15 +867,15 @@ Window_CommonEventMenu.prototype = Object.create(Window_Command.prototype);
 Window_CommonEventMenu.prototype.constructor = Window_CommonEventMenu;
 
 Window_CommonEventMenu.prototype.initialize = function() {
-    var width = eval($gameSystem.getCommonEventMenuSettings('mainW'));
-    var height = eval($gameSystem.getCommonEventMenuSettings('mainH'));
-    var x = eval($gameSystem.getCommonEventMenuSettings('mainX'));
-    var y = eval($gameSystem.getCommonEventMenuSettings('mainY'));
-    this._cols = eval($gameSystem.getCommonEventMenuSettings('mainC'));
-    this._eventId = 0;
-    Window_Command.prototype.initialize.call(this, x, y);
-    this.deactivate();
-    this.openness = 0;
+  var width = eval($gameSystem.getCommonEventMenuSettings('mainW'));
+  var height = eval($gameSystem.getCommonEventMenuSettings('mainH'));
+  var x = eval($gameSystem.getCommonEventMenuSettings('mainX'));
+  var y = eval($gameSystem.getCommonEventMenuSettings('mainY'));
+  this._cols = eval($gameSystem.getCommonEventMenuSettings('mainC'));
+  this._eventId = 0;
+  Window_Command.prototype.initialize.call(this, x, y);
+  this.deactivate();
+  this.openness = 0;
 };
 
 Window_CommonEventMenu.prototype.isCancelEnabled = function() {
@@ -1229,6 +1231,23 @@ Yanfly.CEM.Scene_Battle_createAllWindows =
 Scene_Battle.prototype.createAllWindows = function() {
     Yanfly.CEM.Scene_Battle_createAllWindows.call(this);
     this.createCommonEventMenuWindows();
+};
+
+//=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

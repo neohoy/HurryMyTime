@@ -8,11 +8,11 @@ Imported.YEP_AbsorptionBarrier = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.ABR = Yanfly.ABR || {};
-Yanfly.ABR.version = 1.05;
+Yanfly.ABR.version = 1.06;
 
 //=============================================================================
  /*:
- * @plugindesc v1.05 Battlers can be surrounded by an absorption barrier
+ * @plugindesc v1.06 Battlers can be surrounded by an absorption barrier
  * that would mitigate damage dealt to HP.
  * @author Yanfly Engine Plugins
  *
@@ -408,6 +408,9 @@ Yanfly.ABR.version = 1.05;
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.06:
+ * - Fixed a bug that caused shields to regenerate outside of battle.
  *
  * Version 1.05:
  * - Lunatic Mode fail safes added.
@@ -854,6 +857,7 @@ Game_Battler.prototype.startBarrierAnimation = function() {
 Yanfly.ABR.Game_Battler_regenerateAll = Game_Battler.prototype.regenerateAll;
 Game_Battler.prototype.regenerateAll = function() {
     Yanfly.ABR.Game_Battler_regenerateAll.call(this);
+    if (!$gameParty.inBattle()) return;
     if (this.isAlive()) {
       this.updateBarrierTurns();
       this.regenBarriers();

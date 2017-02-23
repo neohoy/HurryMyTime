@@ -8,10 +8,11 @@ Imported.YEP_SelfSwVar = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.SSV = Yanfly.SSV || {};
+Yanfly.SSV.version = 1.02;
 
 //=============================================================================
  /*:
- * @plugindesc v1.01 Self Switches and Self Variables functionality
+ * @plugindesc v1.02a Self Switches and Self Variables functionality
  * without the need for plugin commands or script calls.
  * @author Yanfly Engine Plugins
  *
@@ -118,12 +119,12 @@ Yanfly.SSV = Yanfly.SSV || {};
  *
  * Script Call:
  *
- *   this.getSelfSwitchValue(mapId, eventId, switchId)
+ *   this.setSelfSwitchValue(mapId, eventId, switchId)
  *   - Replace mapId with the map ID the event exists on. Replace eventId with
  *   the ID of the event. And replace the switchId with the ID of the switch.
  *   This will get the true/false value of that event's self switch.
  *
- *   this.getSelfVariableValue(mapId, eventId, varId)
+ *   this.setSelfVariableValue(mapId, eventId, varId)
  *   - Replace mapId with the map ID the event exists on. Replace eventId with
  *   the ID of the event. And replace the varId with the ID of the variable.
  *   This will get the value of that event's self variable.
@@ -134,7 +135,7 @@ Yanfly.SSV = Yanfly.SSV || {};
  *   the ID of the event. And replace the switchId with the ID of the switch.
  *   This will set that self switch to true or false.
  *
- *   this.getSelfVariableValue(mapId, eventId, varId, value)
+ *   this.setSelfVariableValue(mapId, eventId, varId, value)
  *   - Replace mapId with the map ID the event exists on. Replace eventId with
  *   the ID of the event. And replace the varId with the ID of the variable.
  *   This will set that self variable to the value inserted.
@@ -142,6 +143,11 @@ Yanfly.SSV = Yanfly.SSV || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.02a:
+ * - Lunatic Mode fail safes added.
+ * - Documentation updated for the script calls. Previously used incorrect
+ * function names. Function names should now be fixed.
  *
  * Version 1.01:
  * - Fixed a conflict that made self variables not work properly with the Input
@@ -518,7 +524,12 @@ Game_Interpreter.prototype.adjustSelfSwitch = function(line) {
   if (!DataManager.isSelfSwitch(switchId)) return;
   var key = [mapId, eventId, 'SELF SWITCH ' + switchId];
   var value = $gameSelfSwitches.value(key);
-  value = eval(code);
+  try {
+    value = eval(code);
+  } catch (e) {
+    value = 0;
+    Yanfly.Util.displayError(e, code, 'ADJUST SELF SWITCH SCRIPT ERROR');
+  }
   $gameSelfSwitches.setValue(key, value);
 };
 
@@ -540,7 +551,12 @@ Game_Interpreter.prototype.adjustSelfVariable = function(line) {
   if (!DataManager.isSelfVariable(varId)) return;
   var key = [mapId, eventId, 'SELF VARIABLE ' + varId];
   var value = $gameSelfSwitches.value(key);
-  value = eval(code);
+  try {
+    value = eval(code);
+  } catch (e) {
+    value = 0;
+    Yanfly.Util.displayError(e, code, 'ADJUST SELF VARIABLE SCRIPT ERROR');
+  }
   $gameSelfSwitches.setValue(key, value);
 };
 
@@ -598,6 +614,23 @@ Window_EventItem.prototype.onOk = function() {
   $gameTemp.clearSelfSwVarEvBridge();
   Yanfly.SSV.Window_EventItem_onOk.call(this);
   $gameTemp.clearSelfSwVarEvent();
+};
+
+//=============================================================================
+// Utilities
+//=============================================================================
+
+Yanfly.Util = Yanfly.Util || {};
+
+Yanfly.Util.displayError = function(e, code, message) {
+  console.log(message);
+  console.log(code || 'NON-EXISTENT');
+  console.error(e);
+  if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+    if (!require('nw.gui').Window.get().isDevToolsOpen()) {
+      require('nw.gui').Window.get().showDevTools();
+    }
+  }
 };
 
 //=============================================================================

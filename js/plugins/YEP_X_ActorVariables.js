@@ -8,10 +8,11 @@ Imported.YEP_X_ActorVariables = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.AVar = Yanfly.AVar || {};
+Yanfly.AVar.version = 1.04;
 
 //=============================================================================
  /*:
- * @plugindesc v1.03 (Requires YEP_StatusMenuCore.js) Allows you to
+ * @plugindesc v1.04 (Requires YEP_StatusMenuCore.js) Allows you to
  * display variables for each actor.
  * @author Yanfly Engine Plugins
  *
@@ -111,6 +112,9 @@ Yanfly.AVar = Yanfly.AVar || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.04:
+ * - Plugin fixed to be standalone if you wish to use the x to y notetags.
  *
  * Version 1.03:
  * - Fixed a bug that prevented custom positioning with the Status Menu Core's
@@ -431,6 +435,12 @@ Yanfly.Util.splitArray = function(string) {
       return string.split(' ');
     }
 }
+
+Yanfly.Util.getRange = function(n, m) {
+  var result = [];
+  for (var i = n; i <= m; ++i) result.push(i);
+  return result;
+};
 
 Yanfly.Param.AVarColumn1 = Yanfly.Util.splitArray(Yanfly.Param.AVarColumn1);
 Yanfly.Param.AVarColumn2 = Yanfly.Util.splitArray(Yanfly.Param.AVarColumn2);

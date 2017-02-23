@@ -8,11 +8,11 @@ Imported.YEP_EnemyLevels = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.ELV = Yanfly.ELV || {};
-Yanfly.ELV.version = 1.06;
+Yanfly.ELV.version = 1.07;
 
 //=============================================================================
  /*:
- * @plugindesc v1.06 This plugin enables giving your enemies levels and
+ * @plugindesc v1.07 This plugin enables giving your enemies levels and
  * parameter changes with those levels.
  * @author Yanfly Engine Plugins
  *
@@ -484,6 +484,10 @@ Yanfly.ELV.version = 1.06;
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.07:
+ * - Enemy Transform event now adjusts for stat changes when transforming into
+ * a different enemy.
  *
  * Version 1.06:
  * - Lunatic Mode fail safes added.
@@ -1071,6 +1075,12 @@ Game_Enemy.prototype.isResistLevelChange = function() {
 
 Game_Enemy.prototype.resetLevel = function() {
     this.changeLevel(this.originalLevel());
+};
+
+Yanfly.ELV.Game_Enemy_transform = Game_Enemy.prototype.transform;
+Game_Enemy.prototype.transform = function(enemyId) {
+  Yanfly.ELV.Game_Enemy_transform.call(this, enemyId);
+  this._cacheBaseParam = {};
 };
 
 //=============================================================================

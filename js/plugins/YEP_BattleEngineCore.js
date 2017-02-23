@@ -8,11 +8,11 @@ Imported.YEP_BattleEngineCore = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.BEC = Yanfly.BEC || {};
-Yanfly.BEC.version = 1.42;
+Yanfly.BEC.version = 1.43;
 
 //=============================================================================
  /*:
- * @plugindesc v1.42 Have more control over the flow of the battle system
+ * @plugindesc v1.43a Have more control over the flow of the battle system
  * with this plugin and alter various aspects to your liking.
  * @author Yanfly Engine Plugins
  *
@@ -648,6 +648,10 @@ Yanfly.BEC.version = 1.42;
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.43a:
+ * - Bug fixed to prevent crash if non-existent actions are used.
+ * - Optimization update.
  *
  * Version 1.42:
  * - Optimization update.
@@ -3085,11 +3089,19 @@ Spriteset_Battle.prototype.update = function() {
 };
 
 Spriteset_Battle.prototype.updateZCoordinates = function() {
-    this._battleField.children.sort(this.battleFieldDepthCompare);
+  if (Imported.YEP_ImprovedBattlebacks) {
+    this.updateBattlebackGroupRemove();
+  } else {
     this._battleField.removeChild(this._back1Sprite);
     this._battleField.removeChild(this._back2Sprite);
+  }
+  this._battleField.children.sort(this.battleFieldDepthCompare);
+  if (Imported.YEP_ImprovedBattlebacks) {
+    this.updateBattlebackGroupAdd();
+  } else {
     this._battleField.addChildAt(this._back2Sprite, 0);
     this._battleField.addChildAt(this._back1Sprite, 0);
+  }
 };
 
 Spriteset_Battle.prototype.battleFieldDepthCompare = function(a, b) {
@@ -5126,10 +5138,12 @@ Window_BattleLog.prototype.displayAction = function(subject, item) {
 };
 
 Window_BattleLog.prototype.displayIcon = function(item) {
+    if (!item) return 0;
     return item.battleDisplayIcon;
 };
 
 Window_BattleLog.prototype.displayText = function(item) {
+    if (!item) return '';
     return item.battleDisplayText;
 };
 

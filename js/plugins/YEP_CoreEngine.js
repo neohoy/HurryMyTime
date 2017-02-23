@@ -8,11 +8,11 @@ Imported.YEP_CoreEngine = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.Core = Yanfly.Core || {};
-Yanfly.Core.version = 1.23;
+Yanfly.Core.version = 1.24;
 
 //=============================================================================
 /*:
- * @plugindesc v1.23 Needed for the majority of Yanfly Engine Scripts. Also
+ * @plugindesc v1.24 Needed for the majority of Yanfly Engine Scripts. Also
  * contains bug fixes found inherently in RPG Maker.
  * @author Yanfly Engine Plugins
  *
@@ -482,6 +482,10 @@ Yanfly.Core.version = 1.23;
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.24:
+ * - Screen jittering prevention is now prevented for RPG Maker MV 1.3.4 and
+ * above since Pixi4 handles that now.
  *
  * Version 1.23:
  * - For RPG Maker MV version 1.3.2 and above, the 'Scale Battlebacks' plugin
@@ -1142,6 +1146,13 @@ Game_Party.prototype.onPlayerWalk = function() {
 // Game_Map
 //=============================================================================
 
+Yanfly.isPreventScreenJittering = function() {
+  if (Utils.RPGMAKER_VERSION && Utils.RPGMAKER_VERSION >= '1.3.4') return false;
+  return true;
+};
+
+if (Yanfly.isPreventScreenJittering()) {
+
 Game_Map.prototype.displayX = function() {
     return parseFloat(Math.floor(this._displayX *
       this.tileWidth())) / this.tileWidth();
@@ -1151,6 +1162,8 @@ Game_Map.prototype.displayY = function() {
     return parseFloat(Math.floor(this._displayY *
       this.tileHeight())) / this.tileHeight();
 };
+
+}; // Yanfly.isPreventScreenJittering
 
 Game_Map.prototype.adjustX = function(x) {
     if (this.isLoopHorizontal() && x < this.displayX() -

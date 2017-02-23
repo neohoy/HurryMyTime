@@ -12,7 +12,7 @@ Yanfly.Skill.version = 1.11;
 
 //=============================================================================
 /*:
- * @plugindesc v1.11 Skills are now given more functions and the ability
+ * @plugindesc v1.11a Skills are now given more functions and the ability
  * to require different types of costs.
  * @author Yanfly Engine Plugins
  *
@@ -324,12 +324,12 @@ Yanfly.Skill.version = 1.11;
  *   <Post-Damage Eval>
  *    code
  *    code
- *   <Post-Damage Eval>
+ *   </Post-Damage Eval>
  *
  *   <After Eval>
  *    code
  *    code
- *   <After Eval>
+ *   </After Eval>
  *   If you wish to use custom effects for your skill, you can insert the
  *   respective notetags into the skill (or item) noteboxes and it will run the
  *   code that appears in between the tags. However, using any form of comments
@@ -344,8 +344,10 @@ Yanfly.Skill.version = 1.11;
  * Changelog
  * ============================================================================
  *
- * Version 1.11:
+ * Version 1.11a:
  * - Lunatic Mode fail safes added.
+ * - Documentation fix for the help file. Lunatic Mode tags didn't end right.
+ * The help file is now updated to show the correct notetags.
  *
  * Version 1.10b:
  * - Fixed a visual bug when using text code font changing for custom skill

@@ -8,11 +8,11 @@ Imported.YEP_ExtraEnemyDrops = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.EED = Yanfly.EED || {};
-Yanfly.EED.version = 1.07;
+Yanfly.EED.version = 1.08;
 
 //=============================================================================
  /*:
- * @plugindesc v1.07 Allows your enemies to drop more than just three
+ * @plugindesc v1.08 Allows your enemies to drop more than just three
  * items as per the editor's limit.
  * @author Yanfly Engine Plugins
  *
@@ -357,6 +357,10 @@ Yanfly.EED.version = 1.07;
  * Changelog
  * ============================================================================
  *
+ * Version 1.08:
+ * - Plugin compatibility update with Element Core to count multiple elemental
+ * skills from counting the times struck by each element.
+ *
  * Version 1.07:
  * - Lunatic Mode fail safes added.
  *
@@ -674,7 +678,7 @@ Game_Enemy.prototype.lastStruckAction = function() {
     }
 };
 
-Game_Enemy.prototype.markStruckActions = function(item, subject) {
+Game_Enemy.prototype.markStruckActions = function(item, subject, action) {
     if (!item) return;
     this.createTimesStruck();
     this._lastStruckId = item.id;
@@ -690,7 +694,7 @@ Game_Enemy.prototype.markStruckActions = function(item, subject) {
       this._struckItems[item.id] = this._struckItems[item.id] || 0;
       this._struckItems[item.id] = this._struckItems[item.id] + 1;
     }
-    this.markStruckElements(item, subject);
+    this.markStruckElements(item, subject, action);
 };
 
 Game_Enemy.prototype.killer = function() {
@@ -705,18 +709,21 @@ Game_Enemy.prototype.markLastStruckActor = function(subject) {
   if (subject && subject.isActor()) this._lastStruckActor = subject.actor().id;
 };
 
-Game_Enemy.prototype.markStruckElements = function(item, subject) {
-    if (item.damage.elementId < 0) {
-      for (var i = 0; i < subject.attackElements().length; ++i) {
-        var eleId = subject.attackElements()[i];
-        this._struckElements[eleId] = this._struckElements[eleId] || 0;
-        this._struckElements[eleId] = this._struckElements[eleId] + 1;
-      }
-    } else {
-      var eleId = item.damage.elementId;
-      this._struckElements[eleId] = this._struckElements[eleId] || 0;
-      this._struckElements[eleId] = this._struckElements[eleId] + 1;
-    }
+Game_Enemy.prototype.markStruckElements = function(item, subject, action) {
+  if (Imported.YEP_ElementCore && action) {
+    var elements = action.getItemElements();
+  } else if (item.damage.elementId < 0) {
+    var elements = subject.attackElements();
+  } else {
+    var elements = [item.damage.elementId];
+  }
+  var length = elements.length;
+  for (var i = 0; i < length; ++i) {
+    var eleId = elements[i];
+    if (eleId <= 0) continue;
+    this._struckElements[eleId] = this._struckElements[eleId] || 0;
+    this._struckElements[eleId] = this._struckElements[eleId] + 1;
+  }
 };
 
 Game_Enemy.prototype.timesStruckSkill = function(id) {
@@ -753,7 +760,7 @@ Yanfly.EED.Game_Action_applyItemUserEffect =
 Game_Action.prototype.applyItemUserEffect = function(target) {
     Yanfly.EED.Game_Action_applyItemUserEffect.call(this, target);
     if (target && target.isEnemy()) {
-      target.markStruckActions(this.item(), this.subject());
+      target.markStruckActions(this.item(), this.subject(), this);
     }
 };
 

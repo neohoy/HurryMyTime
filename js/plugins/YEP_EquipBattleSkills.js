@@ -8,11 +8,11 @@ Imported.YEP_EquipBattleSkills = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.EBS = Yanfly.EBS || {};
-Yanfly.EBS.version = 1.09;
+Yanfly.EBS.version = 1.11;
 
 //=============================================================================
  /*:
- * @plugindesc v1.09 Adds a new system where players can only bring
+ * @plugindesc v1.11 Adds a new system where players can only bring
  * equipped skills to battle.
  * @author Yanfly Engine Plugins
  *
@@ -199,6 +199,14 @@ Yanfly.EBS.version = 1.09;
  * Changelog
  * ============================================================================
  *
+ * Version 1.11:
+ * - Fixed a bug caused by Plugin Command 'DecreaseActorBattleSlots 5 by 2'
+ * that would increase instead of decrease.
+ *
+ * Version 1.10:
+ * - Added a new check to remove equipped battle skills from skills that were
+ * manually forgotten, unequipping items, or removing states.
+ *
  * Version 1.09:
  * - Fixed a bug that caused equipped skills to not list their applied states.
  *
@@ -266,7 +274,7 @@ DataManager.isDatabaseLoaded = function() {
     if (!Yanfly.EBS.DataManager_isDatabaseLoaded.call(this)) return false;
 
     if (!Yanfly._loaded_YEP_EquipBattleSkills) {
-  		this.processEBSNotetags1($dataActors);
+      this.processEBSNotetags1($dataActors);
       this.processEBSNotetags2($dataSkills);
       this.processEBSNotetags3($dataClasses);
       this.processEBSNotetags3($dataSkills);
@@ -275,36 +283,36 @@ DataManager.isDatabaseLoaded = function() {
       this.processEBSNotetags3($dataStates);
       Yanfly._loaded_YEP_EquipBattleSkills = true;
     };
-		return true;
+    return true;
 };
 
 DataManager.processEBSNotetags1 = function(group) {
-	var note1 = /<(?:STARTING SKILL SLOTS|starting skill slots):[ ](\d+)>/i;
-	for (var n = 1; n < group.length; n++) {
-		var obj = group[n];
-		var notedata = obj.note.split(/[\r\n]+/);
+  var note1 = /<(?:STARTING SKILL SLOTS|starting skill slots):[ ](\d+)>/i;
+  for (var n = 1; n < group.length; n++) {
+    var obj = group[n];
+    var notedata = obj.note.split(/[\r\n]+/);
 
     obj.startingSkillSlots = Yanfly.Param.EBSStartSlots;
 
-		for (var i = 0; i < notedata.length; i++) {
-			var line = notedata[i];
-			if (line.match(note1)) {
-				obj.startingSkillSlots = parseInt(RegExp.$1);
-			}
-		}
-	}
+    for (var i = 0; i < notedata.length; i++) {
+      var line = notedata[i];
+      if (line.match(note1)) {
+        obj.startingSkillSlots = parseInt(RegExp.$1);
+      }
+    }
+  }
 };
 
 DataManager.processEBSNotetags2 = function(group) {
-	var note1 = /<(?:EQUIP)[ ](.*):[ ]([\+\-]\d+)>/i;
+  var note1 = /<(?:EQUIP)[ ](.*):[ ]([\+\-]\d+)>/i;
   var note2 = /<(?:EQUIP STATE):[ ]*(\d+(?:\s*,\s*\d+)*)>/i;
   var note3 = /<(?:EQUIP STATE):[ ](\d+)[ ](?:THROUGH|to)[ ](\d+)>/i;
   var note4 = /<(?:UNEQUIPPABLE|cannot equip)>/i;
   var note5 = /<(?:ALL ACCESS EQUIPPABLE|ALL CLASS EQUIPPABLE)>/i;
   var note6 = /<(?:ACCESS ONLY EQUIPPABLE|CLASS ONLY EQUIPPABLE)>/i;
-	for (var n = 1; n < group.length; n++) {
-		var obj = group[n];
-		var notedata = obj.note.split(/[\r\n]+/);
+  for (var n = 1; n < group.length; n++) {
+    var obj = group[n];
+    var notedata = obj.note.split(/[\r\n]+/);
 
     obj.equipParamBonus = {
       0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0
@@ -313,55 +321,55 @@ DataManager.processEBSNotetags2 = function(group) {
     obj.equippable = true;
     obj.allEquippable = Yanfly.Param.EBSAllEquip;
 
-		for (var i = 0; i < notedata.length; i++) {
-			var line = notedata[i];
-			if (line.match(note1)) {
-				var stat = String(RegExp.$1).toUpperCase();
+    for (var i = 0; i < notedata.length; i++) {
+      var line = notedata[i];
+      if (line.match(note1)) {
+        var stat = String(RegExp.$1).toUpperCase();
         var value = parseInt(RegExp.$2);
         switch (stat) {
-					case 'HP':
+          case 'HP':
           case 'MAXHP':
           case 'MAX HP':
-						obj.equipParamBonus[0] = value;
-						break;
-					case 'MP':
+            obj.equipParamBonus[0] = value;
+            break;
+          case 'MP':
           case 'MAXMP':
           case 'MAX MP':
           case 'SP':
           case 'MAXSP':
           case 'MAX SP':
-						obj.equipParamBonus[1] = value;
-						break;
-					case 'ATK':
+            obj.equipParamBonus[1] = value;
+            break;
+          case 'ATK':
           case 'STR':
-						obj.equipParamBonus[2] = value;
-						break;
-					case 'DEF':
-						obj.equipParamBonus[3] = value;
-						break;
-					case 'MAT':
+            obj.equipParamBonus[2] = value;
+            break;
+          case 'DEF':
+            obj.equipParamBonus[3] = value;
+            break;
+          case 'MAT':
           case 'INT':
           case 'SPI':
-						obj.equipParamBonus[4] = value;
-						break;
-					case 'MDF':
+            obj.equipParamBonus[4] = value;
+            break;
+          case 'MDF':
           case 'RES':
-						obj.equipParamBonus[5] = value;
-						break;
-					case 'AGI':
+            obj.equipParamBonus[5] = value;
+            break;
+          case 'AGI':
           case 'SPD':
-						obj.equipParamBonus[6] = value;
-						break;
-					case 'LUK':
-						obj.equipParamBonus[7] = value;
-						break;
-				}
-			} else if (line.match(note2)) {
+            obj.equipParamBonus[6] = value;
+            break;
+          case 'LUK':
+            obj.equipParamBonus[7] = value;
+            break;
+        }
+      } else if (line.match(note2)) {
         var array = JSON.parse('[' + RegExp.$1.match(/\d+/g) + ']');
         obj.equipStates = obj.equipStates.concat(array);
       } else if (line.match(note3)) {
         var range = Yanfly.Util.getRange(parseInt(RegExp.$1),
-					parseInt(RegExp.$2));
+          parseInt(RegExp.$2));
         obj.equipStates = obj.equipStates.concat(range);
       } else if (line.match(note4)) {
         obj.equippable = false;
@@ -370,25 +378,25 @@ DataManager.processEBSNotetags2 = function(group) {
       } else if (line.match(note6)) {
         obj.allEquippable = false;
       }
-		}
-	}
+    }
+  }
 };
 
 DataManager.processEBSNotetags3 = function(group) {
-	var note1 = /<(?:EQUIP SKILL SLOTS|equip skill slot):[ ]([\+\-]\d+)>/i;
-	for (var n = 1; n < group.length; n++) {
-		var obj = group[n];
-		var notedata = obj.note.split(/[\r\n]+/);
+  var note1 = /<(?:EQUIP SKILL SLOTS|equip skill slot):[ ]([\+\-]\d+)>/i;
+  for (var n = 1; n < group.length; n++) {
+    var obj = group[n];
+    var notedata = obj.note.split(/[\r\n]+/);
 
     obj.equipSkillSlots = 0;
 
-		for (var i = 0; i < notedata.length; i++) {
-			var line = notedata[i];
-			if (line.match(note1)) {
-				obj.equipSkillSlots = parseInt(RegExp.$1);
-			}
-		}
-	}
+    for (var i = 0; i < notedata.length; i++) {
+      var line = notedata[i];
+      if (line.match(note1)) {
+        obj.equipSkillSlots = parseInt(RegExp.$1);
+      }
+    }
+  }
 };
 
 //=============================================================================
@@ -510,7 +518,7 @@ Game_Actor.prototype.increaseBattleSkillSlots = function(value) {
 };
 
 Game_Actor.prototype.decreaseBattleSkillSlots = function(value) {
-    value -= this.getBattleSkillMaxPlus();
+    value = this.getBattleSkillMaxPlus() - value;
     this.setBattleSkillMaxPlus(value);
 };
 
@@ -565,11 +573,18 @@ Yanfly.EBS.Game_Actor_learnSkill = Game_Actor.prototype.learnSkill;
 Game_Actor.prototype.learnSkill = function(skillId) {
     var hasLearnedSkill = this.isLearnedSkillRaw(skillId);
     Yanfly.EBS.Game_Actor_learnSkill.call(this, skillId);
+    this._cachedEquippableBattleSkills = undefined;
     this.removeHiddenEquippedSkill(skillId);
     if (!hasLearnedSkill) {
       var slotId = this._battleSkills.indexOf(0);
       if (slotId !== -1) this.equipSkill(skillId, slotId);
     }
+};
+
+Yanfly.EBS.Game_Actor_forgetSkill = Game_Actor.prototype.forgetSkill;
+Game_Actor.prototype.forgetSkill = function(skillId) {
+  Yanfly.EBS.Game_Actor_forgetSkill.call(this, skillId);
+  this._cachedEquippableBattleSkills = undefined;
 };
 
 Game_Actor.prototype.isLearnedSkillRaw = function(skillId) {
@@ -629,7 +644,25 @@ Game_Actor.prototype.clearUnequippableSkills = function() {
     }
 };
 
+Game_Actor.prototype.createEquippableBattleSkillsCache = function() {
+  this._cachedEquippableBattleSkills = [];
+  var skills = this.skills();
+  var length = skills.length;
+  for (var i = 0; i < length; ++i) {
+    var skill = skills[i];
+    if (skill) {
+      this._cachedEquippableBattleSkills = 
+        this._cachedEquippableBattleSkills || [];
+      this._cachedEquippableBattleSkills.push(skill.id);
+    }
+  }
+};
+
 Game_Actor.prototype.canEquipSkill = function(skill) {
+  if (this._cachedEquippableBattleSkills === undefined) {
+    this.createEquippableBattleSkillsCache();
+  }
+  if (!this._cachedEquippableBattleSkills.contains(skill.id)) return false;
   if (!skill.equippable) return false;
   if (skill.allEquippable) return true;
   return this.addedSkillTypes().contains(skill.stypeId);
@@ -666,12 +699,12 @@ Game_Actor.prototype.equipSkillStates = function() {
 };
 
 Game_Actor.prototype.sortEquipStates = function(array) {
-		array.sort(function(a, b) {
-			var p1 = a.priority;
-			var p2 = b.priority;
-			if (p1 !== p2) return p2 - p1;
-			return a - b;
-		});
+    array.sort(function(a, b) {
+      var p1 = a.priority;
+      var p2 = b.priority;
+      if (p1 !== p2) return p2 - p1;
+      return a - b;
+    });
 }
 
 Yanfly.EBS.Game_Actor_isStateAffected =
@@ -683,14 +716,22 @@ Game_Actor.prototype.isStateAffected = function(stateId) {
 
 Yanfly.EBS.Game_Actor_isStateAddable = Game_Actor.prototype.isStateAddable;
 Game_Actor.prototype.isStateAddable = function(stateId) {
-		if (this.equipSkillStates().contains($dataStates[stateId])) return false;
+    if (this.equipSkillStates().contains($dataStates[stateId])) return false;
     return Yanfly.EBS.Game_Actor_isStateAddable.call(this, stateId);
 };
 
 Yanfly.EBS.Game_Actor_removeState = Game_Actor.prototype.removeState;
 Game_Actor.prototype.removeState = function(stateId) {
-		if (this.equipSkillStates().contains($dataStates[stateId])) return;
+    if (this.equipSkillStates().contains($dataStates[stateId])) return;
     Yanfly.EBS.Game_Actor_removeState.call(this, stateId);
+    this._cachedEquippableBattleSkills = undefined;
+};
+
+Yanfly.EBS.Game_Actor_changeEquip = Game_Actor.prototype.changeEquip;
+Game_Actor.prototype.changeEquip = function(slotId, item) {
+  Yanfly.EBS.Game_Actor_changeEquip.call(this, slotId, item);
+  this._cachedEquippableBattleSkills = undefined;
+  this.clearUnequippableSkills();
 };
 
 //=============================================================================
@@ -1143,10 +1184,10 @@ Scene_Skill.prototype.createSkillEquipWindow = function() {
 Scene_Skill.prototype.createCompareWindow = function() {
     if (this._compareWindow) return;
     var wx = this._skillEquipWindow.width;
-		var wy = this._skillEquipWindow.y;
-		var ww = Graphics.boxWidth - wx;
-		var wh = Graphics.boxHeight - wy;
-		this._compareWindow = new Window_StatCompare(wx, wy, ww, wh);
+    var wy = this._skillEquipWindow.y;
+    var ww = Graphics.boxWidth - wx;
+    var wh = Graphics.boxHeight - wy;
+    this._compareWindow = new Window_StatCompare(wx, wy, ww, wh);
     this._skillEquipWindow.setStatusWindow(this._compareWindow);
     this._compareWindow.hide();
     this.addWindow(this._compareWindow);
@@ -1210,9 +1251,9 @@ Scene_Skill.prototype.onSkillEqCancel = function() {
 Yanfly.Util = Yanfly.Util || {};
 
 if (!Yanfly.Util.toGroup) {
-		Yanfly.Util.toGroup = function(inVal) {
-				return inVal;
-		}
+    Yanfly.Util.toGroup = function(inVal) {
+        return inVal;
+    }
 };
 
 Yanfly.Util.getRange = function(n, m) {

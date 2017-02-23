@@ -8,11 +8,11 @@ Imported.YEP_BattleStatusWindow = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.BSW = Yanfly.BSW || {};
-Yanfly.BSW.version = 1.07;
+Yanfly.BSW.version = 1.08;
 
 //=============================================================================
  /*:
- * @plugindesc v1.07 A simple battle status window that shows the
+ * @plugindesc v1.08 A simple battle status window that shows the
  * faces of your party members in horizontal format.
  * @author Yanfly Engine Plugins
  *
@@ -47,6 +47,11 @@ Yanfly.BSW.version = 1.07;
  * @desc Adjust column amount to party size?
  * NO - false     YES - true
  * @default false
+ *
+ * @param State Icons Row
+ * @desc Which row do you wish to display the state icons?
+ * Default: 1
+ * @default 1
  *
  * @param ---Actor Switching---
  * @default
@@ -108,6 +113,10 @@ Yanfly.BSW.version = 1.07;
  * Changelog
  * ============================================================================
  *
+ * Version 1.08:
+ * - Added 'State Icons Row' plugin parameter. This plugin parameter allows you
+ * to adjust what 'row' you want the state icons to appear in.
+ *
  * Version 1.07:
  * - Optimization update.
  *
@@ -157,6 +166,7 @@ Yanfly.Param.BSWParamYBuffer = Number(Yanfly.Parameters['Param Y Buffer']);
 Yanfly.Param.BSWCurrentMax = String(Yanfly.Parameters['Param Current Max']);
 Yanfly.Param.BSWCurrentMax = eval(Yanfly.Param.BSWCurrentMax);
 Yanfly.Param.BSWAdjustCol = eval(String(Yanfly.Parameters['Adjust Columns']));
+Yanfly.Param.BSWStateIconRow = Number(Yanfly.Parameters['State Icons Row']);
 
 Yanfly.Param.BSWLfRt = eval(String(Yanfly.Parameters['Left / Right']));
 Yanfly.Param.BSWPageUpDn = eval(String(Yanfly.Parameters['PageUp / PageDown']));
@@ -466,6 +476,7 @@ Window_BattleStatus.prototype.drawItem = function(index) {
     var actor = $gameParty.battleMembers()[index];
     this.drawBasicArea(this.basicAreaRect(index), actor);
     this.drawGaugeArea(this.gaugeAreaRect(index), actor);
+    this.drawStateArea(this.basicAreaRect(index), actor);
 };
 
 Window_BattleStatus.prototype.drawBasicArea = function(rect, actor) {
@@ -479,8 +490,6 @@ Window_BattleStatus.prototype.drawBasicArea = function(rect, actor) {
     this.resetFontSettings();
     this.contents.fontSize = Yanfly.Param.BSWNameFontSize;
     this.drawActorName(actor, rect.x + iw + 4, rect.y, rect.width);
-    var wy = rect.y + this.lineHeight();
-    this.drawActorIcons(actor, rect.x + 2, wy, rect.width);
 };
 
 Window_BattleStatus.prototype.basicAreaRect = function(index) {
@@ -504,6 +513,13 @@ Window_BattleStatus.prototype.drawGaugeArea = function(rect, actor) {
       this.drawActorTp(actor, rect.x + ww, wy, ww);
     }
     this._enableYBuffer = false;
+};
+
+Window_BattleStatus.prototype.drawStateArea = function(rect, actor) {
+  var row = Yanfly.Param.BSWStateIconRow;
+  if (row === undefined) row = 1;
+  var wy = rect.y + (this.lineHeight() * row);
+  this.drawActorIcons(actor, rect.x + 2, wy, rect.width);
 };
 
 Window_BattleStatus.prototype.getGaugesDrawn = function(actor) {

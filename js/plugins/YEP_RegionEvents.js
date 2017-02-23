@@ -8,10 +8,11 @@ Imported.YEP_RegionEvents = true;
 
 var Yanfly = Yanfly || {};
 Yanfly.RCE = Yanfly.RCE || {};
+Yanfly.RCE.version = 1.03;
 
 //=============================================================================
  /*:
- * @plugindesc v1.02 Make it so that whenever players step on certain
+ * @plugindesc v1.03 Make it so that whenever players step on certain
  * Region ID's, the game will play certain common events.
  * @author Yanfly Engine Plugins
  *
@@ -1321,6 +1322,10 @@ Yanfly.RCE = Yanfly.RCE || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.03:
+ * - Corrected an issue that would cause a region event to repeatedly trigger
+ * if the mouse button is held down on the player.
+ *
  * Version 1.02:
  * - Fixed a bug that prevented region events from trigger if the mouse button
  * is held down longer than usual.
@@ -1419,7 +1424,7 @@ Yanfly.RCE.Game_Player_checkEventTriggerHere =
     Game_Player.prototype.checkEventTriggerHere;
 Game_Player.prototype.checkEventTriggerHere = function(triggers) {
     if (!this.canStartLocalEvents()) return;
-    this.processRegionEvent();
+    if (!triggers.contains(0)) this.processRegionEvent();
     Yanfly.RCE.Game_Player_checkEventTriggerHere.call(this, triggers);
 };
 

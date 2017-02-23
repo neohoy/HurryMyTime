@@ -19,6 +19,9 @@ Yanfly.IBalloon = Yanfly.IBalloon || {};
  * @desc This is the filename of your empty balloon. Do not include
  * file extension here.
  * @default EmptyBalloon
+ * @require 1
+ * @dir img/system/
+ * @type file
  *
  * @help
  * ============================================================================

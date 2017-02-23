@@ -258,22 +258,22 @@ DataManager.isDatabaseLoaded = function() {
     this.processUpgradeNotetags2($dataItems);
     Yanfly._loaded_YEP_X_ItemUpgradeSlots = true;
   }
-  return true;
+	return true;
 };
 
 DataManager.processUpgradeNotetags1 = function(group) {
-  for (var n = 1; n < group.length; n++) {
-    var obj = group[n];
-    ItemManager.initSlotUpgradeNotes(obj);
+	for (var n = 1; n < group.length; n++) {
+		var obj = group[n];
+		ItemManager.initSlotUpgradeNotes(obj);
     this.processUpgradeNotetags(obj);
-  }
+	}
 };
 
 DataManager.processUpgradeNotetags2 = function(group) {
-  for (var n = 1; n < group.length; n++) {
-    var obj = group[n];
-    this.processUpgradeNotetags(obj);
-  }
+	for (var n = 1; n < group.length; n++) {
+		var obj = group[n];
+		this.processUpgradeNotetags(obj);
+	}
 };
 
 DataManager.processUpgradeNotetags = function(item) {
@@ -361,11 +361,11 @@ ItemManager.initSlotUpgradeNotes = function(item) {
         item.upgradeArmorType = item.upgradeArmorType.concat(array);
       } else if (line.match(note10)) {
         var range = Yanfly.Util.getRange(parseInt(RegExp.$1),
-          parseInt(RegExp.$2));
+					parseInt(RegExp.$2));
         item.upgradeWeaponType = item.upgradeWeaponType.concat(range);
       } else if (line.match(note11)) {
         var range = Yanfly.Util.getRange(parseInt(RegExp.$1),
-          parseInt(RegExp.$2));
+					parseInt(RegExp.$2));
         item.upgradeArmorType = item.upgradeArmorType.concat(range);
       } else if (line.match(note12)) {
         item.upgradeSlotsVariance = parseInt(RegExp.$1);
